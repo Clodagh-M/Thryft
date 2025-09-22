@@ -10,4 +10,8 @@ public class Product
     public string Colour { get; set; }
     public string Size { get; set; }
 
+    //in terminal (right click Thryft solution (second from top))
+    //dotnet ef migrations add [message]
+    //dotnet ef database update
+
 }

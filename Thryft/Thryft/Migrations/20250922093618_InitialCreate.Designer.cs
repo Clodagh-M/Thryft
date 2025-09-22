@@ -10,7 +10,7 @@ using Thryft.Data;
 namespace Thryft.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250922091645_InitialCreate")]
+    [Migration("20250922093618_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
