@@ -1,6 +1,10 @@
 using Thryft.Client.Pages;
 using Thryft.Components;
 using MudBlazor.Services;
+using Thryft.Models;
+using Microsoft.EntityFrameworkCore.Internal;
+using Microsoft.EntityFrameworkCore;
+using Thryft.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,8 +15,10 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddMudServices();
 
-var app = builder.Build();
+builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
+    options.UseSqlite("Data Source=app.db"));
 
+var app = builder.Build();
 
 
 // Configure the HTTP request pipeline.
