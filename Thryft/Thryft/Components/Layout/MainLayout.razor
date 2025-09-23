@@ -1,7 +1,7 @@
 ﻿@inherits LayoutComponentBase
 
 @* Required *@
-<MudThemeProvider />
+<MudThemeProvider Theme="ThryftTheme"/>
 <MudPopoverProvider />
 
 @* Needed for dialogs *@
@@ -12,14 +12,12 @@
 
 
 <div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+    @* <div class="sidebar"> *@
+        @* <NavMenu /> *@
+    @* </div> *@
 
     <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
-        </div>
+        <div class="top-row px-4"></div>
 
         <article class="content px-4">
             @Body
@@ -32,3 +30,17 @@
     <a href="" class="reload">Reload</a>
     <a class="dismiss">🗙</a>
 </div>
+
+@code{
+    MudTheme ThryftTheme = new MudTheme()
+    {
+        PaletteLight = new PaletteLight()
+        {
+            Primary = "#efa3a0",
+            Secondary = "#ffdec7",
+            Tertiary = "#ffeedd",
+            AppbarBackground = "#8b597b",
+            TextPrimary = "#493129"
+        }
+    };
+}
