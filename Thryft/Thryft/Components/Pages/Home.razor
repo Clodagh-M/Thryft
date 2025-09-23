@@ -1,4 +1,7 @@
 ﻿@page "/"
+@using Thryft.Models
+@using Thryft.Services
+@inject UserService userService
 
 
 <PageTitle>Home</PageTitle>
@@ -9,6 +12,44 @@
         <MudIconButton Icon="@Icons.Material.Filled.Menu" Href=""></MudIconButton>
     </MudAppBar>
 
+
+    @if (users == null)
+    {
+        <p>Loading...</p>
+    }
+    else
+    {
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var user in users)
+                {
+                    <tr>
+                        <td>@user.Id</td>
+                        <td>@user.Name</td>
+                        <td>@user.Email</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
     
 
 </MudContainer>
+
+
+@code {
+    private List<User> users;
+
+    protected override async Task OnInitializedAsync()
+    {
+        users = await userService.GetUsersAsync();
+    }
+
+}

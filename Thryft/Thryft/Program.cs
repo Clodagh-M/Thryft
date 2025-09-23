@@ -5,6 +5,7 @@ using Thryft.Models;
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore;
 using Thryft.Data;
+using Thryft.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,8 +22,10 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 //builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
 //    options.UseSqlite(connectionString));
 
-builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
+builder.Services.AddDbContextFactory<AppDbContext>(options =>
     options.UseSqlite("Data Source=app.db"));
+
+builder.Services.AddScoped<UserService>();
 
 var app = builder.Build();
 

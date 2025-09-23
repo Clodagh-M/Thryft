@@ -9,7 +9,7 @@ using Thryft.Data;
 
 namespace Thryft.Migrations
 {
-    [DbContext(typeof(ApplicationDbContext))]
+    [DbContext(typeof(Data.AppDbContext))]
     [Migration("20250923090054_InitialCreate")]
     partial class InitialCreate
     {
