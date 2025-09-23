@@ -15,8 +15,11 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddMudServices();
 
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+
 builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
-    options.UseSqlite("Data Source=app.db"));
+    options.UseSqlServer(connectionString));
 
 var app = builder.Build();
 
