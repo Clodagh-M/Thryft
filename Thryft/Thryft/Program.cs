@@ -1,4 +1,3 @@
-using Thryft.Client.Pages;
 using Thryft.Components;
 using MudBlazor.Services;
 using Thryft.Models;
@@ -49,7 +48,6 @@ app.UseAntiforgery();
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode()
-    .AddInteractiveWebAssemblyRenderMode()
-    .AddAdditionalAssemblies(typeof(Thryft.Client._Imports).Assembly);
+    .AddInteractiveWebAssemblyRenderMode();
 
 app.Run();

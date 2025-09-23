@@ -5,8 +5,6 @@ VisualStudioVersion = 17.14.36327.8
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Thryft", "Thryft\Thryft\Thryft.csproj", "{ECF764E6-186E-4BC8-BEDE-4950BFDF49FE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Thryft.Client", "Thryft\Thryft.Client\Thryft.Client.csproj", "{95FCB720-B296-4ED3-AA2F-A2BDEA69D9C1}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -17,10 +15,6 @@ Global
 		{ECF764E6-186E-4BC8-BEDE-4950BFDF49FE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{ECF764E6-186E-4BC8-BEDE-4950BFDF49FE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{ECF764E6-186E-4BC8-BEDE-4950BFDF49FE}.Release|Any CPU.Build.0 = Release|Any CPU
-		{95FCB720-B296-4ED3-AA2F-A2BDEA69D9C1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{95FCB720-B296-4ED3-AA2F-A2BDEA69D9C1}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{95FCB720-B296-4ED3-AA2F-A2BDEA69D9C1}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{95FCB720-B296-4ED3-AA2F-A2BDEA69D9C1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

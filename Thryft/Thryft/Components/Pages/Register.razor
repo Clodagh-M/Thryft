@@ -1,5 +1,42 @@
-﻿<h3>Register</h3>
+﻿@page "/"
+
+@using Thryft.Models
+@using Thryft.Services
+@inject UserService userService
+@inject NavigationManager navigationManager
+
+
+<PageTitle>Register</PageTitle>
+
+<MudContainer>
+
+    <MudAppBar>
+        @* <MudIconButton Color="Color.Tertiary" Icon="@Icons.Material.Filled.Menu" Href="">Filter</MudIconButton> *@
+        <MudSpacer />
+        <MudMenu Color="Color.Tertiary" Class="ms-4" Icon="@Icons.Material.Filled.Person">
+            <MudMenuItem></MudMenuItem>
+            <MudMenuItem></MudMenuItem>
+            <MudMenuItem></MudMenuItem>
+        </MudMenu>
+    </MudAppBar>
+
+    <MudText>Already Registered? <MudButton OnClick="@(() => goToLogin())">Login</MudButton></MudText>
+
+
+   </MudContainer>
 
 @code {
+    private List<User> users;
+    public int cartItemCount = 2;
+
+    protected override async Task OnInitializedAsync()
+    {
+        users = await userService.GetUsersAsync();
+    }
+
+    public async Task goToLogin()
+    {
+        navigationManager.NavigateTo("/login", forceLoad: true);
+    }
 
 }
