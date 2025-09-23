@@ -18,8 +18,11 @@ builder.Services.AddMudServices();
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
 
+//builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
+//    options.UseSqlite(connectionString));
+
 builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
-    options.UseSqlServer(connectionString));
+    options.UseSqlite("Data Source=app.db"));
 
 var app = builder.Build();
 
