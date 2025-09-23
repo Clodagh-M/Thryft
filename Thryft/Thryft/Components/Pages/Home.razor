@@ -9,8 +9,17 @@
 <MudContainer>
 
     <MudAppBar>
-        <MudIconButton Icon="@Icons.Material.Filled.Menu" Href=""></MudIconButton>
+        @* <MudIconButton Color="Color.Tertiary" Icon="@Icons.Material.Filled.Menu" Href="">Filter</MudIconButton> *@
+        <MudSpacer/> 
+        <MudBadge Overlap="true" Color="Color.Secondary" Style="font-size:10px !important;" Content="@cartItemCount"><MudIconButton Href="" Color="Color.Tertiary" Icon="@Icons.Material.Filled.ShoppingCart"></MudIconButton></MudBadge>
+        <MudMenu Color="Color.Tertiary" Class="ms-4" Icon="@Icons.Material.Filled.Person">
+            <MudMenuItem></MudMenuItem>
+            <MudMenuItem></MudMenuItem>
+            <MudMenuItem></MudMenuItem>
+        </MudMenu>
     </MudAppBar>
+
+    <MudTextField T="string" Placeholder="Search Products..." Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Outlined.Search" Immediate="true" />
 
 
     @if (users == null)
@@ -46,6 +55,7 @@
 
 @code {
     private List<User> users;
+    public int cartItemCount = 2;
 
     protected override async Task OnInitializedAsync()
     {
