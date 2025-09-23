@@ -6,6 +6,7 @@
 @inject NavigationManager navigationManager
 
 
+
 <PageTitle>Register</PageTitle>
 
 <MudContainer>
@@ -20,7 +21,10 @@
         </MudMenu>
     </MudAppBar>
 
-    <MudText>Already Registered? <MudButton OnClick="@(() => goToLogin())">Login</MudButton></MudText>
+    
+    <MudText>Already Registered?</MudText><a href="/login">Login</a>
+    
+    @* <MudText>Already Registered? <MudButton OnClick="goToLogin">Login</MudButton></MudText> *@
 
 
    </MudContainer>
@@ -34,7 +38,7 @@
         users = await userService.GetUsersAsync();
     }
 
-    public async Task goToLogin()
+    private void goToLogin()
     {
         navigationManager.NavigateTo("/login", forceLoad: true);
     }
