@@ -8,4 +8,7 @@ public class Order
     public Decimal Total { get; set; }
     public DateTime Created { get; set; }
     public string Status { get; set; }
+
+    public User User { get; set; }
+    public ICollection<OrderItem> OrderItems { get; set; }
 }
