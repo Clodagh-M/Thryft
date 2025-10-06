@@ -2,6 +2,7 @@
 @using Thryft.Models
 @using Thryft.Services
 @inject UserService userService
+@inject ProductService productService
 
 
 <PageTitle>Home</PageTitle>
@@ -22,7 +23,25 @@
     <MudTextField T="string" Placeholder="Search Products..." Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Outlined.Search" Immediate="true" />
 
 
-    @if (users == null)
+    <MudGrid>
+
+        @foreach (var product in products)
+        {
+
+            <MudItem xs="12" sm="6" md="4" lg="6">
+
+                <MudCard>@product.ProductName</MudCard>
+
+            </MudItem>
+
+        }
+
+    </MudGrid>
+
+    
+
+
+    @* @if (users == null)
     {
         <p>Loading... Users</p>
     }
@@ -47,7 +66,7 @@
                 }
             </tbody>
         </table>
-    }
+    } *@
     
 
 </MudContainer>
@@ -55,11 +74,14 @@
 
 @code {
     private List<User> users;
+
+    private List<Product> products;
+
     public int cartItemCount = 2;
 
     protected override async Task OnInitializedAsync()
     {
-        users = await userService.GetUsersAsync();
+        products = await productService.GetProductsAsync();
     }
 
 }
