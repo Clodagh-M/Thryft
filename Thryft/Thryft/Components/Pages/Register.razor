@@ -13,16 +13,17 @@
 
     <MudCard>
         <MudCardContent>
-            <MudTextField T="string" Label="First name" HelperText="Max. 8 characters"/>
-            <MudTextField T="string" Label="Email" Class="mt-3" />
-            <MudTextField T="string" Label="Password" HelperText="Choose a strong password" Class="mt-3"/>
-            <MudTextField T="string" Label="Password" HelperText="Repeat the password" Class="mt-3"/>
+            <MudTextField  T=String  Label="First name" HelperText="Max. 8 characters"/>
+            <MudTextField T=String Label ="Email" Class="mt-3" />
+            <MudTextField T=String Label ="Password" HelperText="Choose a strong password" Class="mt-3" />
+            <MudTextField T=String Label="Password" HelperText="Repeat the password" Class="mt-3" />
         </MudCardContent>
         <MudCardActions>
-            <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto">Register</MudButton>
+            <MudSpacer/>
+            <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto">Register</MudButton><MudSpacer/>
         </MudCardActions>
     </MudCard>
-   
+
 
 </MudContainer>
 
@@ -67,4 +68,5 @@
         success = true;
         StateHasChanged();
     }
+
 }
