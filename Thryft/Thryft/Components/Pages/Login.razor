@@ -4,13 +4,12 @@
 @using Thryft.Services
 @inject UserService userService
 @inject NavigationManager navigationManager
-
-
+@using System.Text.RegularExpressions
+@using System.ComponentModel.DataAnnotations
 
 <PageTitle>Login</PageTitle>
 
 <MudContainer>
-
     <MudAppBar>
         @* <MudIconButton Color="Color.Tertiary" Icon="@Icons.Material.Filled.Menu" Href="">Filter</MudIconButton> *@
         <MudSpacer />
@@ -20,13 +19,29 @@
             <MudMenuItem></MudMenuItem>
         </MudMenu>
     </MudAppBar>
-
-
-    <MudText>LOGIN</MudText>
-
-
 </MudContainer>
 
+<MudGrid>
+    <MudItem xs="12" sm="7">
+        <MudCard Class="pa-4">
+            <MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
+                <MudTextField T="string" Label="Email" RequiredError="Email is required!"
+                              Validation="@(new EmailAddressAttribute() {ErrorMessage = "The email address is invalid"})" />
+        
+                <MudTextField T="string" Label="Password" InputType="InputType.Password" @ref="pwField"
+                              Validation="@(new Func<string, IEnumerable<string>>(PasswordStrength))"
+                              RequiredError="Password is required!" />
+
+                @* Validation="@(new Func<string, string>(PasswordMatch))"  *@
+            </MudForm>
+        </MudCard>
+        <MudSpacer/>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@(() => form.Validate())">Login</MudButton>
+        <MudSpacer />
+     
+
+    </MudItem>
+</MudGrid>
 
 @code {
     private List<User> users;
@@ -35,6 +50,35 @@
     protected override async Task OnInitializedAsync()
     {
         users = await userService.GetUsersAsync();
+    }
+ 
+    bool success;
+    string[] errors = { };
+    MudTextField<string> pwField;
+    MudForm form;
+
+    private IEnumerable<string> PasswordStrength(string pw)
+    {
+        if (string.IsNullOrWhiteSpace(pw))
+        {
+            yield return "Password is required!";
+            yield break;
+        }
+        if (pw.Length < 8)
+            yield return "Password must be at least of length 8";
+        if (!Regex.IsMatch(pw, @"[A-Z]"))
+            yield return "Password must contain at least one capital letter";
+        if (!Regex.IsMatch(pw, @"[a-z]"))
+            yield return "Password must contain at least one lowercase letter";
+        if (!Regex.IsMatch(pw, @"[0-9]"))
+            yield return "Password must contain at least one digit";
+    }
+
+    private string PasswordMatch(string arg)
+    {
+        if (pwField.Value != arg)
+            return "Passwords don't match";
+        return null;
     }
 
 }
