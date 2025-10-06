@@ -24,38 +24,40 @@
 <MudGrid>
     <MudItem xs="12" sm="7">
         <MudCard Class="pa-4">
-            <MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
-                <MudTextField T="string" Label="Email" RequiredError="Email is required!"
+            <MudForm @ref="form">
+                <MudTextField T="string" Label="Email" RequiredError="Email is required!" @bind-Value="email" Immediate="true"
                               Validation="@(new EmailAddressAttribute() {ErrorMessage = "The email address is invalid"})" />
         
-                <MudTextField T="string" Label="Password" InputType="InputType.Password" @ref="pwField"
-                              Validation="@(new Func<string, IEnumerable<string>>(PasswordStrength))"
+                <MudTextField T="string" Label="Password" InputType="InputType.Password" @bind-Value="password" @ref="pwField"
+                              Validation="@(new Func<string, IEnumerable<string>>(PasswordStrength))" Immediate="true"
                               RequiredError="Password is required!" />
-
-                @* Validation="@(new Func<string, string>(PasswordMatch))"  *@
             </MudForm>
         </MudCard>
         <MudSpacer/>
             <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@(() => form.Validate())">Login</MudButton>
         <MudSpacer />
-     
-
     </MudItem>
 </MudGrid>
 
 @code {
-    private List<User> users;
-    public int cartItemCount = 2;
+
+    MudForm form;
+    private string email;
+    private string password;
 
     protected override async Task OnInitializedAsync()
     {
-        users = await userService.GetUsersAsync();
+        var user = await userService.ValidateUserCredentialsAsync(email, password);
     }
- 
-    bool success;
-    string[] errors = { };
+
+
+
+
+
+
+
     MudTextField<string> pwField;
-    MudForm form;
+    MudTextField<string> emField;
 
     private IEnumerable<string> PasswordStrength(string pw)
     {
@@ -73,12 +75,4 @@
         if (!Regex.IsMatch(pw, @"[0-9]"))
             yield return "Password must contain at least one digit";
     }
-
-    private string PasswordMatch(string arg)
-    {
-        if (pwField.Value != arg)
-            return "Passwords don't match";
-        return null;
-    }
-
 }
