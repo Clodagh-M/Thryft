@@ -3,7 +3,7 @@
 @using Thryft.Services
 @inject UserService userService
 @inject ProductService productService
-
+@rendermode InteractiveServer
 
 <PageTitle>Home</PageTitle>
 
@@ -14,8 +14,20 @@
 
     <MudGrid>
 
-        @foreach (var product in products)
-        {
+        @{
+            var product = new Product
+            {
+                ProductName = "T-Shirt",
+                Price = 29.99m,
+                Stock = 100,
+                Category = "Clothing",
+                Colours = new[] { Colour.Blue, Colour.Black, Colour.White },
+                Sizes = new[] { Thryft.Models.Size.S, Thryft.Models.Size.M, Thryft.Models.Size.L, Thryft.Models.Size.XL }
+            };
+        }
+
+        @* @foreach (var product in products)
+        { *@
 
             <MudItem xs="12" sm="6" md="4" lg="6">
 
@@ -27,66 +39,154 @@
                     </MudCardHeader>
                     <MudCardContent>
                         <MudGrid>
-                            @* <MudItem xs="4" Class="text-center"><MudText Class="fw-bold">Category</MudText>@product.Category</MudItem>
-                            <MudItem xs="4" Class="text-center"><MudText Class="fw-bold">Colour</MudText>@product.Colour</MudItem>
-                            <MudItem xs="4" Class="text-center"><MudText Class="fw-bold">Size</MudText>@product.Size</MudItem> *@
-                            <MudItem xs="4" Class="text-center"><MudText Class="fw-bold">@product.Category</MudText></MudItem>
-                            @* <MudItem xs="4" Class="text-center"><MudText Class="fw-bold">@product.Colour</MudText></MudItem>
-                            <MudItem xs="4" Class="text-center"><MudText Class="fw-bold">@product.Size</MudText></MudItem> *@
+                            @* <MudItem xs="12" Class="mt-3 text-center">
+                                <MudText Class="fw-bold">Category: @product.Category</MudText>
+                            </MudItem> *@
+
+                            <MudItem xs="12">
+                                <MudText Typo="Typo.subtitle2" Class="mb-2">Available Colors:</MudText>
+                                <div class="d-flex flex-wrap gap-2">
+                                    @foreach (var colour in product.Colours)
+                                    {
+                                        <MudChip T="Colour"
+                                            Value="@colour"
+                                            OnClick="@(() => SelectColor(colour))"
+                                            Variant="SelectedColor == colour ? Variant.Filled : Variant.Outlined"
+                                            Class="color-chip p-0"
+                                            Style="@GetChipStyle(colour)">
+                                        ㅤ
+                                        </MudChip>
+                                    }
+                                </div>
+                            </MudItem>
+
+                        <MudText>@SelectedColor</MudText>
+                        <MudText>@SelectedSize</MudText>
+                
+                            <MudItem xs="12" Class="mt-3">
+                                <MudText Typo="Typo.subtitle2" Class="mb-2">Available Sizes:</MudText>
+                                <div class="d-flex flex-wrap gap-2">
+                                    @foreach (var size in product.Sizes)
+                                    {
+                                        <MudChip 
+                                            T="Thryft.Models.Size" 
+                                            Value="@size"
+                                            OnClick="@(() => SelectSize(size))"
+                                            Color="SelectedSize == size ? Color.Primary : Color.Default"
+                                            Variant="SelectedSize == size ? Variant.Filled : Variant.Outlined"
+                                            Class="size-chip">
+                                            @size
+                                        </MudChip>
+                                    }
+                                </div>
+                            </MudItem>
+
                         </MudGrid>
                     </MudCardContent>
                 </MudCard>
+                
 
             </MudItem>
 
-        }
+        @* } *@
 
     </MudGrid>
-
-    
-
-
-    @* @if (users == null)
-    {
-        <p>Loading... Users</p>
-    }
-    else
-    {
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Id</th>
-                    <th>Name</th>
-                    <th>Email</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var user in users)
-                {
-                    <tr>
-                        <td>@user.UserId</td>
-                        <td>@user.Name</td>
-                        <td>@user.Email</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    } *@
-    
 
 </MudContainer>
 
 
 @code {
+
     private List<User> users;
 
     private List<Product> products;
+
+    private Colour? SelectedColor { get; set; }
+    private Thryft.Models.Size? SelectedSize { get; set; }
 
     public int cartItemCount = 2;
 
     protected override async Task OnInitializedAsync()
     {
         products = await productService.GetProductsAsync();
+    }
+
+    private string GetChipStyle(Colour colour)
+    {
+        return $"min-width: 33px !important; background-color: {GetColorHex(colour)}; color: {GetTextColor(colour)}; border: 2px solid {GetBorderColor(colour)}; min-width: 60px;";
+    }
+
+    private string GetColorHex(Colour colour)
+    {
+        return colour switch
+        {
+            Colour.Red => "#f44336",
+            Colour.Blue => "#2196f3",
+            Colour.Green => "#4caf50",
+            Colour.Black => "#000000",
+            Colour.White => "#ffffff",
+            Colour.Yellow => "#ffeb3b",
+            Colour.Pink => "#e91e63",
+            Colour.Purple => "#9c27b0",
+            Colour.Orange => "#ff9800",
+            Colour.Grey => "#9e9e9e",
+            Colour.Brown => "#795548",
+            Colour.Navy => "#001f3f",
+            Colour.Teal => "#39cccc",
+            Colour.Maroon => "#85144b",
+            Colour.Beige => "#f5f5dc",
+            _ => "#ffffff"
+        };
+    }
+
+    private string GetTextColor(Colour colour)
+    {
+        // Return white text for dark backgrounds
+        return colour switch
+        {
+            Colour.Black or Colour.Navy or Colour.Maroon or Colour.Brown or Colour.Purple => "#ffffff",
+            _ => "#000000"
+        };
+    }
+
+    private string GetBorderColor(Colour colour)
+    {
+        return colour switch
+        {
+            Colour.White or Colour.Beige or Colour.Yellow => "#ccc",
+            _ => "transparent"
+        };
+    }
+
+    private void SelectColor(Colour colour)
+    {
+        if (SelectedColor != colour)
+        {
+            SelectedColor = colour;
+        }
+        else
+        {
+            SelectedColor = null;
+        }
+
+        // You can add additional logic here, like updating a shopping cart
+        StateHasChanged();
+    }
+
+    private void SelectSize(Thryft.Models.Size size)
+    {
+
+        if (SelectedSize != size)
+        {
+            SelectedSize = size;
+        }
+        else
+        {
+            SelectedSize = null;
+        }
+
+        // You can add additional logic here, like updating a shopping cart
+        StateHasChanged();
     }
 
 }

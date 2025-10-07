@@ -17,3 +17,4 @@ public class Product
 
     public ICollection<OrderItem> OrderItems { get; set; }
 }
+
