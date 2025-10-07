@@ -15,7 +15,13 @@ public class UserService
         _contextFactory = contextFactory;
     }
 
-    public async Task<User> GetUsersAsync(string email)
+    public async Task<List<User>> GetUsersAsync()
+    {
+        using var context = _contextFactory.CreateDbContext();
+        return await context.Users.ToListAsync();
+    }
+
+    public async Task<User> GetUserAsync(string email)
     {
         using var context = _contextFactory.CreateDbContext();
         return await context.Users.FirstOrDefaultAsync(u => u.Email == email);

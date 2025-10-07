@@ -7,8 +7,8 @@ public class Product
     public int Stock {  get; set; }
     public decimal Price { get; set; }
     public string Category { get; set; }
-    public string Colour { get; set; }
-    public string Size { get; set; }
+    public Colour[] Colours { get; set; } = Array.Empty<Colour>();
+    public Size[] Sizes { get; set; } = Array.Empty<Size>();
 
     //in terminal (right click Thryft solution (second from top))
     //dotnet ef migrations add [message]

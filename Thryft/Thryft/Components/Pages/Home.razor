@@ -9,17 +9,6 @@
 
 <MudContainer>
 
-    <MudAppBar>
-        @* <MudIconButton Color="Color.Tertiary" Icon="@Icons.Material.Filled.Menu" Href="">Filter</MudIconButton> *@
-        <MudSpacer/> 
-        <MudBadge Overlap="true" Color="Color.Secondary" Style="font-size:10px !important;" Content="@cartItemCount"><MudIconButton Href="" Color="Color.Tertiary" Icon="@Icons.Material.Filled.ShoppingCart"></MudIconButton></MudBadge>
-        <MudMenu Color="Color.Tertiary" Class="ms-4" Icon="@Icons.Material.Filled.Person">
-            <MudMenuItem></MudMenuItem>
-            <MudMenuItem></MudMenuItem>
-            <MudMenuItem></MudMenuItem>
-        </MudMenu>
-    </MudAppBar>
-
     <MudTextField T="string" Placeholder="Search Products..." Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Outlined.Search" Immediate="true" />
 
 
@@ -30,7 +19,23 @@
 
             <MudItem xs="12" sm="6" md="4" lg="6">
 
-                <MudCard>@product.ProductName</MudCard>
+                <MudCard>
+                    <MudCardHeader Class="mud-theme-primary">
+                        <MudText Typo="Typo.h6">@product.ProductName</MudText>
+                        <MudSpacer/>
+                        <MudChip Color="Color.Tertiary" T="string" Style="color: #000">@string.Concat("€" + @product.Price)</MudChip>
+                    </MudCardHeader>
+                    <MudCardContent>
+                        <MudGrid>
+                            @* <MudItem xs="4" Class="text-center"><MudText Class="fw-bold">Category</MudText>@product.Category</MudItem>
+                            <MudItem xs="4" Class="text-center"><MudText Class="fw-bold">Colour</MudText>@product.Colour</MudItem>
+                            <MudItem xs="4" Class="text-center"><MudText Class="fw-bold">Size</MudText>@product.Size</MudItem> *@
+                            <MudItem xs="4" Class="text-center"><MudText Class="fw-bold">@product.Category</MudText></MudItem>
+                            @* <MudItem xs="4" Class="text-center"><MudText Class="fw-bold">@product.Colour</MudText></MudItem>
+                            <MudItem xs="4" Class="text-center"><MudText Class="fw-bold">@product.Size</MudText></MudItem> *@
+                        </MudGrid>
+                    </MudCardContent>
+                </MudCard>
 
             </MudItem>
 
