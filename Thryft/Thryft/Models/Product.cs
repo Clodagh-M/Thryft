@@ -1,10 +1,14 @@
-﻿namespace Thryft.Models;
+﻿using System.ComponentModel.DataAnnotations.Schema;
+
+namespace Thryft.Models;
 
 public class Product
 {
     public int ProductId { get; set; }
     public string ProductName { get; set; }
     public int Stock {  get; set; }
+
+    [Column(TypeName = "decimal(18,2)")]
     public decimal Price { get; set; }
     public string Category { get; set; }
     public Colour[] Colours { get; set; } = Array.Empty<Colour>();

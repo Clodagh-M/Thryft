@@ -11,8 +11,8 @@ using Thryft.Data;
 namespace Thryft.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250923112117_AddedToDatabase")]
-    partial class AddedToDatabase
+    [Migration("20251007114405_jsonConvertion")]
+    partial class jsonConvertion
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -22,7 +22,7 @@ namespace Thryft.Migrations
 
             modelBuilder.Entity("Thryft.Models.Order", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<int>("OrderId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
@@ -39,7 +39,7 @@ namespace Thryft.Migrations
                     b.Property<int>("UserID")
                         .HasColumnType("INTEGER");
 
-                    b.HasKey("Id");
+                    b.HasKey("OrderId");
 
                     b.HasIndex("UserID");
 
@@ -55,6 +55,12 @@ namespace Thryft.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("Quantity")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("SelectedColour")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("SelectedSize")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("OrderId", "ProductId");
@@ -74,16 +80,20 @@ namespace Thryft.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Colour")
+                    b.Property<string>("Colours")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<decimal>("Price")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("decimal(18,2)");
 
-                    b.Property<string>("Size")
+                    b.Property<string>("ProductName")
                         .IsRequired()
                         .HasColumnType("TEXT");
+
+                    b.Property<string>("Sizes")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<int>("Stock")
                         .HasColumnType("INTEGER");

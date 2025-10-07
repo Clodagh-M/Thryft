@@ -11,8 +11,8 @@ using Thryft.Data;
 namespace Thryft.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251006090622_UpdateDatabase")]
-    partial class UpdateDatabase
+    [Migration("20251007112735_fixPriceInt")]
+    partial class fixPriceInt
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -57,6 +57,12 @@ namespace Thryft.Migrations
                     b.Property<int>("Quantity")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("SelectedColour")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("SelectedSize")
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("OrderId", "ProductId");
 
                     b.HasIndex("ProductId");
@@ -74,18 +80,18 @@ namespace Thryft.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Colour")
+                    b.PrimitiveCollection<string>("Colours")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<decimal>("Price")
-                        .HasColumnType("TEXT");
+                    b.Property<int>("Price")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("ProductName")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Size")
+                    b.PrimitiveCollection<string>("Sizes")
                         .IsRequired()
                         .HasColumnType("TEXT");
 

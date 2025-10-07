@@ -11,8 +11,8 @@ using Thryft.Data;
 namespace Thryft.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251007103125_updateColoursandSizestoEnums")]
-    partial class updateColoursandSizestoEnums
+    [Migration("20251007113344_FixProductColumnTypes")]
+    partial class FixProductColumnTypes
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -78,20 +78,22 @@ namespace Thryft.Migrations
 
                     b.Property<string>("Category")
                         .IsRequired()
+                        .HasMaxLength(50)
                         .HasColumnType("TEXT");
 
-                    b.PrimitiveCollection<string>("Colours")
+                    b.Property<string>("Colours")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<decimal>("Price")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("ProductName")
                         .IsRequired()
+                        .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
-                    b.PrimitiveCollection<string>("Sizes")
+                    b.Property<string>("Sizes")
                         .IsRequired()
                         .HasColumnType("TEXT");
 

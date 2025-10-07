@@ -14,7 +14,7 @@
 
     <MudGrid>
 
-        @{
+        @* @{
             var product = new Product
             {
                 ProductName = "T-Shirt",
@@ -24,10 +24,10 @@
                 Colours = new[] { Colour.Blue, Colour.Black, Colour.White },
                 Sizes = new[] { Thryft.Models.Size.S, Thryft.Models.Size.M, Thryft.Models.Size.L, Thryft.Models.Size.XL }
             };
-        }
+        } *@
 
-        @* @foreach (var product in products)
-        { *@
+        @foreach (var product in products)
+        {
 
             <MudItem xs="12" sm="6" md="4" lg="6">
 
@@ -43,52 +43,70 @@
                                 <MudText Class="fw-bold">Category: @product.Category</MudText>
                             </MudItem> *@
 
-                            <MudItem xs="12">
-                                <MudText Typo="Typo.subtitle2" Class="mb-2">Available Colors:</MudText>
+                            <MudItem xs="6">
+
+                            <MudButton Class="mb-2" OnClick="toggleColours" EndIcon="@(_coloursExpanded? Icons.Material.Filled.KeyboardArrowUp : Icons.Material.Filled.KeyboardArrowDown)">Available Colors:</MudButton>
+                                <MudCollapse Expanded="_coloursExpanded">
                                 <div class="d-flex flex-wrap gap-2">
                                     @foreach (var colour in product.Colours)
                                     {
                                         <MudChip T="Colour"
-                                            Value="@colour"
-                                            OnClick="@(() => SelectColor(colour))"
-                                            Variant="SelectedColor == colour ? Variant.Filled : Variant.Outlined"
-                                            Class="color-chip p-0"
-                                            Style="@GetChipStyle(colour)">
-                                        ㅤ
+                                                 Value="@colour"
+                                                 OnClick="@(() => SelectColor(colour))"
+                                                 Variant="SelectedColor == colour ? Variant.Filled : Variant.Outlined"
+                                                 Class="color-chip p-0"
+                                                 Style="@GetChipStyle(colour)">
+                                            ㅤ
                                         </MudChip>
                                     }
                                 </div>
+                                </MudCollapse>
+                                
                             </MudItem>
-
-                        <MudText>@SelectedColor</MudText>
-                        <MudText>@SelectedSize</MudText>
                 
-                            <MudItem xs="12" Class="mt-3">
-                                <MudText Typo="Typo.subtitle2" Class="mb-2">Available Sizes:</MudText>
+                            <MudItem xs="6">
+                            <MudButton Class="mb-2" OnClick="toggleSizes" EndIcon="@(_sizesExpanded? Icons.Material.Filled.KeyboardArrowUp : Icons.Material.Filled.KeyboardArrowDown)">Available Sizes:</MudButton>
+                            <MudCollapse Expanded="_sizesExpanded">
                                 <div class="d-flex flex-wrap gap-2">
                                     @foreach (var size in product.Sizes)
                                     {
-                                        <MudChip 
-                                            T="Thryft.Models.Size" 
-                                            Value="@size"
-                                            OnClick="@(() => SelectSize(size))"
-                                            Color="SelectedSize == size ? Color.Primary : Color.Default"
-                                            Variant="SelectedSize == size ? Variant.Filled : Variant.Outlined"
-                                            Class="size-chip">
+                                        <MudChip T="Thryft.Models.Size"
+                                                 Value="@size"
+                                                 OnClick="@(() => SelectSize(size))"
+                                                 Color="SelectedSize == size ? Color.Primary : Color.Default"
+                                                 Variant="SelectedSize == size ? Variant.Filled : Variant.Outlined"
+                                                 Class="size-chip">
                                             @size
                                         </MudChip>
                                     }
                                 </div>
+                            </MudCollapse>
+                                
                             </MudItem>
+
 
                         </MudGrid>
                     </MudCardContent>
+                    <MudCardActions>
+                        <MudGrid>
+                            <MudItem xs="8" Class="text-right">
+                            <MudText Typo="Typo.caption" Color="@(product.Stock > 0 ? Color.Success : Color.Error)">
+                                @(product.Stock > 0 ? $"{product.Stock} left" : "Sold out")
+                                </MudText>
+                            </MudItem>
+                            <MudItem xs="4" Class="text-right">
+                                <MudSpacer/>
+                                <MudButton Style="width: 100%">Add to Cart</MudButton>
+                            </MudItem>
+                        </MudGrid>
+                        
+                    </MudCardActions>
                 </MudCard>
                 
 
             </MudItem>
 
-        @* } *@
+        }
 
     </MudGrid>
 
@@ -100,6 +118,19 @@
     private List<User> users;
 
     private List<Product> products;
+
+    bool _coloursExpanded = true;
+    bool _sizesExpanded = true;
+
+    private void toggleColours()
+    {
+        _coloursExpanded = !_coloursExpanded;
+    }
+
+    private void toggleSizes()
+    {
+        _sizesExpanded = !_sizesExpanded;
+    }
 
     private Colour? SelectedColor { get; set; }
     private Thryft.Models.Size? SelectedSize { get; set; }

@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Components.Web;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 using Thryft.Models;
 
 namespace Thryft.Data;
@@ -43,5 +44,32 @@ public class AppDbContext : DbContext
             .HasOne(oi => oi.Product)
             .WithMany(p => p.OrderItems)
             .HasForeignKey(oi => oi.ProductId);
+
+        modelBuilder.Entity<Product>(entity =>
+        {
+            // Configure Colours array - store as comma-separated string
+            entity.Property(p => p.Colours)
+                .HasConversion(
+                    v => string.Join(",", v),
+                    v => v.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                          .Select(c => Enum.Parse<Colour>(c.Trim()))
+                          .ToArray()
+                )
+                .HasColumnType("nvarchar(255)");
+
+            // Configure Sizes array - store as comma-separated string
+            entity.Property(p => p.Sizes)
+                .HasConversion(
+                    v => string.Join(",", v),
+                    v => v.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                          .Select(s => Enum.Parse<Size>(s.Trim()))
+                          .ToArray()
+                )
+                .HasColumnType("nvarchar(255)");
+
+            // Configure Price
+            entity.Property(p => p.Price)
+                .HasColumnType("decimal(18,2)");
+        });
     }
 }
