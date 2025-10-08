@@ -2,6 +2,77 @@ html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
+
+.product-icon-container {
+    background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+    border: 1px solid #e0e0e0;
+}
+
+.fa-red {
+    color: #f44336;
+}
+
+.fa-blue {
+    color: #2196f3;
+}
+
+.fa-green {
+    color: #4caf50;
+}
+
+.fa-black {
+    color: #000000;
+}
+
+.fa-white {
+    color: #ffffff;
+}
+
+.fa-yellow {
+    color: #ffeb3b;
+}
+
+.fa-pink {
+    color: #e91e63;
+}
+
+.fa-purple {
+    color: #9c27b0;
+}
+
+.fa-orange {
+    color: #ff9800;
+}
+
+.fa-gray {
+    color: #9e9e9e;
+}
+
+.fa-brown {
+    color: #795548;
+}
+
+.fa-navy {
+    color: #001f3f;
+}
+
+.fa-teal {
+    color: #39cccc;
+}
+
+.fa-maroon {
+    color: #85144b;
+}
+
+.fa-beige {
+    color: #f5f5dc;
+}
+
+.fa-primary {
+    color: var(--mud-palette-primary);
+}
+
+
 a, .btn-link {
     color: #006bb7;
 }

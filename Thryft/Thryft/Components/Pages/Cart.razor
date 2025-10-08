@@ -1,8 +1,12 @@
 ﻿@page "/cart"
+
 @using Thryft.Models
 @using Thryft.Services
+
 @inject CartService cartService
 @inject NavigationManager Navigation
+@inject ProductIconService productIconService
+
 @rendermode InteractiveServer
 
 <PageTitle>Thryft - Shopping Cart</PageTitle>
@@ -21,18 +25,22 @@
                         <MudCardContent>
                             <MudGrid>
                                 <MudItem xs="12" sm="3">
-                                    <div class="product-image-placeholder" style="width: 100px; height: 100px; background-color: #f5f5f5; display: flex; align-items: center; justify-content: center;">
-                                        <MudIcon Icon="@Icons.Material.Filled.ShoppingBag" Size="MudBlazor.Size.Large" Color="Color.Primary" />
+                                    <div class="product-icon-container"
+                                         style="width: 100px; height: 100px; background-color: #f5f5f5; display: flex; align-items: center; justify-content: center; border-radius: 8px;">
+                                        <i class="@productIconService.GetProductIcon(GetProductCategory(item.ProductId), item.SelectedColor)"
+                                           style="@productIconService.GetColorStyle(item.SelectedColor) font-size: 40px;"></i>
                                     </div>
                                 </MudItem>
                                 <MudItem xs="12" sm="6">
                                     <MudText Typo="Typo.h6">@item.ProductName</MudText>
-                                    <MudText Typo="Typo.body2" Color="Color.Secondary">€@item.Price</MudText>
+                                    <MudText Typo="Typo.body2" Color="Color.Primary">€@item.Price</MudText>
 
                                     @if (item.SelectedColor.HasValue)
                                     {
                                         <MudText Typo="Typo.caption">Color: @item.SelectedColor.Value</MudText>
                                     }
+
+                                    <MudSpacer/>
 
                                     @if (item.SelectedSize.HasValue)
                                     {
@@ -140,6 +148,13 @@
     protected override void OnInitialized()
     {
         cartService.OnCartUpdated += StateHasChanged;
+    }
+
+    private string GetProductCategory(int productId)
+    {
+        // You might need to get the actual product category from your data
+        // For now, return a default or implement based on your data structure
+        return "clothing"; // Replace with actual category lookup
     }
 
     private void IncreaseQuantity(CartItem item)
