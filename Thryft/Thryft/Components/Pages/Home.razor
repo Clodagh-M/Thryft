@@ -3,143 +3,263 @@
 @using Thryft.Services
 @inject UserService userService
 @inject ProductService productService
+@inject CartService cartService
+@inject NavigationManager Navigation
 @rendermode InteractiveServer
 
 <PageTitle>Home</PageTitle>
 
 <MudContainer>
 
-    <MudTextField T="string" Placeholder="Search Products..." Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Outlined.Search" Immediate="true" />
-
+    <MudGrid>
+        <MudItem xs="10">
+            <MudTextField Value="@searchTerm"
+                          ValueChanged="@(async (string value) => await HandleSearchChanged(value))"
+                          T="string"
+                          Placeholder="Search Products..."
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
+                          Clearable="true"
+                          Adornment="Adornment.End"
+                          AdornmentIcon="@Icons.Material.Outlined.Search"
+                          Immediate="true" />
+        </MudItem>
+    </MudGrid>
 
     <MudGrid>
 
-        @* @{
-            var product = new Product
-            {
-                ProductName = "T-Shirt",
-                Price = 29.99m,
-                Stock = 100,
-                Category = "Clothing",
-                Colours = new[] { Colour.Blue, Colour.Black, Colour.White },
-                Sizes = new[] { Thryft.Models.Size.S, Thryft.Models.Size.M, Thryft.Models.Size.L, Thryft.Models.Size.XL }
-            };
-        } *@
-
-        @foreach (var product in products)
+        @foreach (var product in filteredProducts)
         {
-
             <MudItem xs="12" sm="6" md="4" lg="6">
-
                 <MudCard>
                     <MudCardHeader Class="mud-theme-primary">
                         <MudText Typo="Typo.h6">@product.ProductName</MudText>
-                        <MudSpacer/>
+                        <MudSpacer />
                         <MudChip Color="Color.Tertiary" T="string" Style="color: #000">@string.Concat("€" + @product.Price)</MudChip>
                     </MudCardHeader>
                     <MudCardContent>
                         <MudGrid>
-                            @* <MudItem xs="12" Class="mt-3 text-center">
-                                <MudText Class="fw-bold">Category: @product.Category</MudText>
-                            </MudItem> *@
-
                             <MudItem xs="6">
-
-                            <MudButton Class="mb-2" OnClick="toggleColours" EndIcon="@(_coloursExpanded? Icons.Material.Filled.KeyboardArrowUp : Icons.Material.Filled.KeyboardArrowDown)">Available Colors:</MudButton>
-                                <MudCollapse Expanded="_coloursExpanded">
-                                <div class="d-flex flex-wrap gap-2">
-                                    @foreach (var colour in product.Colours)
-                                    {
-                                        <MudChip T="Colour"
-                                                 Value="@colour"
-                                                 OnClick="@(() => SelectColor(colour))"
-                                                 Variant="SelectedColor == colour ? Variant.Filled : Variant.Outlined"
-                                                 Class="color-chip p-0"
-                                                 Style="@GetChipStyle(colour)">
-                                            ㅤ
-                                        </MudChip>
-                                    }
-                                </div>
+                                <MudButton Class="mb-2"
+                                           OnClick="@(() => ToggleColours(product.ProductId))"
+                                           EndIcon="@(GetColourExpandedState(product.ProductId) ? Icons.Material.Filled.KeyboardArrowUp : Icons.Material.Filled.KeyboardArrowDown)">
+                                    Available Colors:
+                                </MudButton>
+                                <MudCollapse Expanded="@GetColourExpandedState(product.ProductId)">
+                                    <div class="d-flex flex-wrap gap-2">
+                                        @foreach (var colour in product.Colours)
+                                        {
+                                            <MudChip T="Colour"
+                                                     Value="@colour"
+                                                     OnClick="@(() => SelectColor(product.ProductId, colour))"
+                                                     Variant="GetSelectedColor(product.ProductId) == colour ? Variant.Filled : Variant.Outlined"
+                                                     Class="color-chip p-0"
+                                                     Style="@GetChipStyle(colour)">
+                                                ㅤ
+                                            </MudChip>
+                                        }
+                                    </div>
                                 </MudCollapse>
-                                
                             </MudItem>
-                
+
                             <MudItem xs="6">
-                            <MudButton Class="mb-2" OnClick="toggleSizes" EndIcon="@(_sizesExpanded? Icons.Material.Filled.KeyboardArrowUp : Icons.Material.Filled.KeyboardArrowDown)">Available Sizes:</MudButton>
-                            <MudCollapse Expanded="_sizesExpanded">
-                                <div class="d-flex flex-wrap gap-2">
-                                    @foreach (var size in product.Sizes)
-                                    {
-                                        <MudChip T="Thryft.Models.Size"
-                                                 Value="@size"
-                                                 OnClick="@(() => SelectSize(size))"
-                                                 Color="SelectedSize == size ? Color.Primary : Color.Default"
-                                                 Variant="SelectedSize == size ? Variant.Filled : Variant.Outlined"
-                                                 Class="size-chip">
-                                            @size
-                                        </MudChip>
-                                    }
-                                </div>
-                            </MudCollapse>
-                                
+                                <MudButton Class="mb-2"
+                                           OnClick="@(() => ToggleSizes(product.ProductId))"
+                                           EndIcon="@(GetSizeExpandedState(product.ProductId) ? Icons.Material.Filled.KeyboardArrowUp : Icons.Material.Filled.KeyboardArrowDown)">
+                                    Available Sizes:
+                                </MudButton>
+                                <MudCollapse Expanded="@GetSizeExpandedState(product.ProductId)">
+                                    <div class="d-flex flex-wrap gap-2">
+                                        @foreach (var size in product.Sizes)
+                                        {
+                                            <MudChip T="Thryft.Models.Size"
+                                                     Value="@size"
+                                                     OnClick="@(() => SelectSize(product.ProductId, size))"
+                                                     Color="GetSelectedSize(product.ProductId) == size ? Color.Primary : Color.Default"
+                                                     Variant="GetSelectedSize(product.ProductId) == size ? Variant.Filled : Variant.Outlined"
+                                                     Class="size-chip">
+                                                @size
+                                            </MudChip>
+                                        }
+                                    </div>
+                                </MudCollapse>
                             </MudItem>
-
-
                         </MudGrid>
                     </MudCardContent>
                     <MudCardActions>
                         <MudGrid>
                             <MudItem xs="8" Class="text-right">
-                            <MudText Typo="Typo.caption" Color="@(product.Stock > 0 ? Color.Success : Color.Error)">
-                                @(product.Stock > 0 ? $"{product.Stock} left" : "Sold out")
+                                <MudText Typo="Typo.caption" Color="@(product.Stock > 0 ? Color.Success : Color.Error)">
+                                    @(product.Stock > 0 ? $"{product.Stock} left" : "Sold out")
                                 </MudText>
                             </MudItem>
                             <MudItem xs="4" Class="text-right">
-                                <MudSpacer/>
-                                <MudButton Style="width: 100%">Add to Cart</MudButton>
+                                <MudSpacer />
+                                <MudButton Style="width: 100%"
+                                           Variant="Variant.Filled"
+                                           Color="Color.Primary"
+                                           Disabled="@(!CanAddToCart(product))"
+                                           OnClick="@(() => AddToCart(product))">
+                                    Add to Cart
+                                </MudButton>
                             </MudItem>
                         </MudGrid>
-                        
                     </MudCardActions>
                 </MudCard>
-                
-
             </MudItem>
-
         }
 
     </MudGrid>
 
 </MudContainer>
 
-
 @code {
-
     private List<User> users;
+    private List<Product> allProducts;
+    private List<Product> filteredProducts;
+    private string searchTerm = string.Empty;
 
-    private List<Product> products;
-
-    bool _coloursExpanded = true;
-    bool _sizesExpanded = true;
-
-    private void toggleColours()
-    {
-        _coloursExpanded = !_coloursExpanded;
-    }
-
-    private void toggleSizes()
-    {
-        _sizesExpanded = !_sizesExpanded;
-    }
-
-    private Colour? SelectedColor { get; set; }
-    private Thryft.Models.Size? SelectedSize { get; set; }
-
-    public int cartItemCount = 2;
+    // Use dictionaries to track expanded state and selections per product
+    private Dictionary<int, bool> colourExpandedStates = new Dictionary<int, bool>();
+    private Dictionary<int, bool> sizeExpandedStates = new Dictionary<int, bool>();
+    private Dictionary<int, Colour?> selectedColors = new Dictionary<int, Colour?>();
+    private Dictionary<int, Thryft.Models.Size?> selectedSizes = new Dictionary<int, Thryft.Models.Size?>();
 
     protected override async Task OnInitializedAsync()
     {
-        products = await productService.GetProductsAsync();
+        allProducts = await productService.GetProductsAsync();
+        filteredProducts = allProducts;
+
+        // Initialize expanded states for all products
+        foreach (var product in allProducts)
+        {
+            colourExpandedStates[product.ProductId] = true;
+            sizeExpandedStates[product.ProductId] = true;
+        }
+
+        cartService.OnCartUpdated += StateHasChanged;
+    }
+
+    private bool CanAddToCart(Product product)
+    {
+        return product.Stock > 0;
+    }
+
+    private void AddToCart(Product product)
+    {
+        var selectedColor = GetSelectedColor(product.ProductId);
+        var selectedSize = GetSelectedSize(product.ProductId);
+
+        cartService.AddToCart(product, selectedColor, selectedSize);
+
+        StateHasChanged();
+
+        // Show a notification (you might want to use MudBlazor's Snackbar)
+        // _snackbar.Add("Item added to cart!", Severity.Success);
+    }
+
+    private void ToggleColours(int productId)
+    {
+        if (colourExpandedStates.ContainsKey(productId))
+        {
+            colourExpandedStates[productId] = !colourExpandedStates[productId];
+        }
+        else
+        {
+            colourExpandedStates[productId] = false;
+        }
+        StateHasChanged();
+    }
+
+    private void ToggleSizes(int productId)
+    {
+        if (sizeExpandedStates.ContainsKey(productId))
+        {
+            sizeExpandedStates[productId] = !sizeExpandedStates[productId];
+        }
+        else
+        {
+            sizeExpandedStates[productId] = false;
+        }
+        StateHasChanged();
+    }
+
+    private bool GetColourExpandedState(int productId)
+    {
+        return colourExpandedStates.ContainsKey(productId) ? colourExpandedStates[productId] : true;
+    }
+
+    private bool GetSizeExpandedState(int productId)
+    {
+        return sizeExpandedStates.ContainsKey(productId) ? sizeExpandedStates[productId] : true;
+    }
+
+    private Colour? GetSelectedColor(int productId)
+    {
+        return selectedColors.ContainsKey(productId) ? selectedColors[productId] : null;
+    }
+
+    private Thryft.Models.Size? GetSelectedSize(int productId)
+    {
+        return selectedSizes.ContainsKey(productId) ? selectedSizes[productId] : null;
+    }
+
+    private void SelectColor(int productId, Colour colour)
+    {
+        selectedColors[productId] = GetSelectedColor(productId) != colour ? colour : null;
+        StateHasChanged();
+    }
+
+    private void SelectSize(int productId, Thryft.Models.Size size)
+    {
+        selectedSizes[productId] = GetSelectedSize(productId) != size ? size : null;
+        StateHasChanged();
+    }
+
+    private void OnSearchInput(ChangeEventArgs e)
+    {
+        searchTerm = e.Value?.ToString() ?? string.Empty;
+        FilterProducts();
+    }
+
+    private async Task HandleSearchChanged(string value)
+    {
+        searchTerm = value;
+        FilterProducts();
+        await Task.CompletedTask;
+    }
+
+    private void FilterProducts()
+    {
+        if (string.IsNullOrWhiteSpace(searchTerm))
+        {
+            filteredProducts = allProducts;
+            return;
+        }
+
+        var searchTerms = searchTerm.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                                  .Select(term => term.Trim().ToLowerInvariant())
+                                  .ToArray();
+
+        filteredProducts = allProducts.Where(product =>
+        {
+            // Search in product name
+            var nameMatches = searchTerms.Any(term =>
+                product.ProductName?.Contains(term, StringComparison.OrdinalIgnoreCase) == true);
+
+            // Search in category
+            var categoryMatches = searchTerms.Any(term =>
+                product.Category?.Contains(term, StringComparison.OrdinalIgnoreCase) == true);
+
+            // Search in colors
+            var colorMatches = searchTerms.Any(term =>
+                product.Colours?.Any(color =>
+                    color.ToString().Contains(term, StringComparison.OrdinalIgnoreCase)) == true);
+
+            return nameMatches || categoryMatches || colorMatches;
+        }).ToList();
+
+        StateHasChanged();
     }
 
     private string GetChipStyle(Colour colour)
@@ -172,7 +292,6 @@
 
     private string GetTextColor(Colour colour)
     {
-        // Return white text for dark backgrounds
         return colour switch
         {
             Colour.Black or Colour.Navy or Colour.Maroon or Colour.Brown or Colour.Purple => "#ffffff",
@@ -189,35 +308,8 @@
         };
     }
 
-    private void SelectColor(Colour colour)
+    public void Dispose()
     {
-        if (SelectedColor != colour)
-        {
-            SelectedColor = colour;
-        }
-        else
-        {
-            SelectedColor = null;
-        }
-
-        // You can add additional logic here, like updating a shopping cart
-        StateHasChanged();
+        cartService.OnCartUpdated -= StateHasChanged;
     }
-
-    private void SelectSize(Thryft.Models.Size size)
-    {
-
-        if (SelectedSize != size)
-        {
-            SelectedSize = size;
-        }
-        else
-        {
-            SelectedSize = null;
-        }
-
-        // You can add additional logic here, like updating a shopping cart
-        StateHasChanged();
-    }
-
 }

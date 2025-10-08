@@ -1,7 +1,17 @@
-﻿<MudAppBar>
+﻿@using Thryft.Services
+@inject CartService cartService
+@inject NavigationManager Navigation
+
+<MudAppBar Class="py-1">
     @* <MudIconButton Color="Color.Tertiary" Icon="@Icons.Material.Filled.Menu" Href="">Filter</MudIconButton> *@
     <MudSpacer />
-    <MudBadge Overlap="true" Color="Color.Secondary" Style="font-size:10px !important;" Content="@cartItemCount"><MudIconButton Href="" Color="Color.Tertiary" Icon="@Icons.Material.Filled.ShoppingCart"></MudIconButton></MudBadge>
+    <MudText>thryft</MudText>
+    <MudSpacer/>
+    <MudBadge Color="Color.Dark" Content="@cartService.CurrentCart.TotalItems" Max="99">
+        <MudIconButton Icon="@Icons.Material.Filled.ShoppingCart"
+                       OnClick="NavigateToCart"
+                       Color="Color.Tertiary" />
+    </MudBadge>
     <MudMenu Color="Color.Tertiary" Class="ms-4" Icon="@Icons.Material.Filled.Person">
         <MudMenuItem></MudMenuItem>
         <MudMenuItem></MudMenuItem>
@@ -11,6 +21,9 @@
 
 @code {
 
-    public int cartItemCount = 2;
+    private void NavigateToCart()
+    {
+        Navigation.NavigateTo("/cart");
+    }
 
 }
