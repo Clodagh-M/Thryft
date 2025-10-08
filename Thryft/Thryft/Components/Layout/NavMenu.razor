@@ -20,10 +20,20 @@
 </MudAppBar>
 
 @code {
+    protected override void OnInitialized()
+    {
+        // Subscribe to cart updates so the badge updates in real-time
+        cartService.OnCartUpdated += StateHasChanged;
+    }
 
     private void NavigateToCart()
     {
         Navigation.NavigateTo("/cart");
     }
 
+    public void Dispose()
+    {
+        // Important: Unsubscribe to prevent memory leaks
+        cartService.OnCartUpdated -= StateHasChanged;
+    }
 }

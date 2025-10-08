@@ -12,7 +12,7 @@
 <MudContainer>
 
     <MudGrid>
-        <MudItem xs="10">
+        <MudItem xs="12">
             <MudTextField Value="@searchTerm"
                           ValueChanged="@(async (string value) => await HandleSearchChanged(value))"
                           T="string"
@@ -27,7 +27,6 @@
     </MudGrid>
 
     <MudGrid>
-
         @foreach (var product in filteredProducts)
         {
             <MudItem xs="12" sm="6" md="4" lg="6">
@@ -108,9 +107,7 @@
                 </MudCard>
             </MudItem>
         }
-
     </MudGrid>
-
 </MudContainer>
 
 @code {
@@ -150,12 +147,14 @@
         var selectedColor = GetSelectedColor(product.ProductId);
         var selectedSize = GetSelectedSize(product.ProductId);
 
+        Console.WriteLine($"=== ADD TO CART CLICKED ===");
+        Console.WriteLine($"Product: {product.ProductName}");
+        Console.WriteLine($"Product ID: {product.ProductId}");
+        Console.WriteLine($"Stock: {product.Stock}");
+
         cartService.AddToCart(product, selectedColor, selectedSize);
 
         StateHasChanged();
-
-        // Show a notification (you might want to use MudBlazor's Snackbar)
-        // _snackbar.Add("Item added to cart!", Severity.Success);
     }
 
     private void ToggleColours(int productId)
@@ -216,12 +215,6 @@
         StateHasChanged();
     }
 
-    private void OnSearchInput(ChangeEventArgs e)
-    {
-        searchTerm = e.Value?.ToString() ?? string.Empty;
-        FilterProducts();
-    }
-
     private async Task HandleSearchChanged(string value)
     {
         searchTerm = value;
@@ -243,15 +236,12 @@
 
         filteredProducts = allProducts.Where(product =>
         {
-            // Search in product name
             var nameMatches = searchTerms.Any(term =>
                 product.ProductName?.Contains(term, StringComparison.OrdinalIgnoreCase) == true);
 
-            // Search in category
             var categoryMatches = searchTerms.Any(term =>
                 product.Category?.Contains(term, StringComparison.OrdinalIgnoreCase) == true);
 
-            // Search in colors
             var colorMatches = searchTerms.Any(term =>
                 product.Colours?.Any(color =>
                     color.ToString().Contains(term, StringComparison.OrdinalIgnoreCase)) == true);

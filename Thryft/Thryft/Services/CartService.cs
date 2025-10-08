@@ -10,6 +10,8 @@ namespace Thryft.Services
 
         public void AddToCart(Product product, Colour? color, Size? size, int quantity = 1)
         {
+            Console.WriteLine($"CartService: Adding {product.ProductName} to cart");
+
             var cartItem = new CartItem
             {
                 ProductId = product.ProductId,
@@ -21,7 +23,10 @@ namespace Thryft.Services
             };
 
             CurrentCart.AddItem(cartItem);
+            Console.WriteLine($"CartService: Cart now has {CurrentCart.TotalItems} items");
+
             OnCartUpdated?.Invoke();
+            Console.WriteLine($"CartService: OnCartUpdated event fired");
         }
 
         public void RemoveFromCart(int productId, Colour? color, Size? size)
