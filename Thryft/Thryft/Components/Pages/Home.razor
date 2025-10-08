@@ -12,134 +12,277 @@
 @rendermode InteractiveServer
 
 <style>
-
     .circle-section {
         height: 70px;
         width: 230px;
         overflow: scroll;
         scrollbar-width: none;
     }
-
+    
+    .filter-sidebar {
+        transition: transform 0.3s ease-in-out;
+    }
+    
+    .filter-sidebar.closed {
+        transform: translateX(-100%);
+    }
+    
+    .filter-sidebar.open {
+        transform: translateX(0);
+    }
+    
+    .filter-overlay {
+        background-color: rgba(0, 0, 0, 0.5);
+        transition: opacity 0.3s ease-in-out;
+    }
 </style>
 
 <PageTitle>Home</PageTitle>
 
-    <MudGrid Class="my-2">
-        <MudItem xs="10">
-            <MudTextField Value="@searchTerm"
-                          ValueChanged="@(async (string value) => await HandleSearchChanged(value))"
-                          T="string"
-                          Placeholder="Search Products..."
-                          Variant="Variant.Outlined"
-                          Margin="Margin.Dense"
-                          Clearable="true"
-                          Adornment="Adornment.End"
-                          AdornmentIcon="@Icons.Material.Outlined.Search"
+<!-- Filter Sidebar -->
+<div class="filter-sidebar position-fixed top-0 start-0 h-100 bg-white z-index-5 shadow @(showFilters ? "open" : "closed")" style="width: 320px;">
+    <div class="p-4 h-100 d-flex flex-column">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <MudText Typo="Typo.h6" Class="m-0">Filters</MudText>
+            <MudIconButton Icon="@Icons.Material.Filled.Close" OnClick="ToggleFilters" Color="Color.Default" />
+        </div>
+        
+        <div class="flex-grow-1" style="overflow-y: auto;">
+            <!-- Category Filter -->
+            <MudText Typo="Typo.subtitle1" Class="mb-3">Category</MudText>
+            @foreach (var category in allProducts.Select(p => p.Category).Distinct().OrderBy(c => c))
+            {
+                <MudCheckBox T="bool" 
+                           Checked="@(selectedCategories.Contains(category))"
+                           CheckedChanged="@((bool isChecked) => ToggleCategoryFilter(category, isChecked))"
+                           Label="@category"
+                           Class="mb-2" />
+            }
+            
+            <MudDivider Class="my-4" />
+            
+            <!-- Price Range Filter -->
+            <MudText Typo="Typo.subtitle1" Class="mb-3">Price Range</MudText>
+            <MudRangeSlider T="decimal" 
+                          Min="0" 
+                          Max="@(maxPrice)" 
+                          MinValue="@minPriceFilter" 
+                          MaxValue="@maxPriceFilter"
+                          MinValueChanged="@(async (decimal value) => await OnMinPriceChanged(value))"
+                          MaxValueChanged="@(async (decimal value) => await OnMaxPriceChanged(value))"
                           Immediate="true" />
-        </MudItem>
-        <MudItem xs="2" Class="d-flex align-center justify-end">
-            <MudIconButton Icon="@Icons.Material.Filled.ShoppingCart"
-                            OnClick="NavigateToCart"
-                            Color="Color.Primary" />
-            <MudText Typo="Typo.caption" Class="ml-2">@cartService.CurrentCart.TotalItems items</MudText>
-        </MudItem>
-    </MudGrid>
+            <div class="d-flex justify-content-between">
+                <MudText Typo="Typo.caption">€@minPriceFilter</MudText>
+                <MudText Typo="Typo.caption">€@maxPriceFilter</MudText>
+            </div>
+            
+            <MudDivider Class="my-4" />
+            
+            <!-- Stock Filter -->
+            <MudText Typo="Typo.subtitle1" Class="mb-3">Stock Status</MudText>
+            <MudCheckBox T="bool" 
+                       Checked="@showInStockOnly"
+                       CheckedChanged="@(async (bool isChecked) => await ToggleInStockFilter(isChecked))"
+                       Label="In Stock Only"
+                       Class="mb-2" />
+            
+            <MudDivider Class="my-4" />
+            
+            <!-- Color Filter -->
+            <MudText Typo="Typo.subtitle1" Class="mb-3">Colors</MudText>
+            <div class="d-flex flex-wrap gap-2">
+                @foreach (var color in allProducts.SelectMany(p => p.Colours).Distinct().OrderBy(c => c.ToString()))
+                {
+                    <MudChip T="Colour"
+                           Value="@color"
+                           OnClick="@(() => ToggleColorFilter(color))"
+                           Variant="@(selectedColorsFilter.Contains(color) ? Variant.Filled : Variant.Outlined)"
+                           Class="color-chip p-0"
+                           Style="@GetChipStyle(color)">
+                        ㅤ
+                    </MudChip>
+                }
+            </div>
+        </div>
+        
+        <div class="mt-auto pt-3">
+            <MudButton Variant="Variant.Filled" 
+                     Color="Color.Secondary" 
+                     OnClick="ClearAllFilters"
+                     FullWidth="true"
+                     Class="mb-2">
+                Clear All Filters
+            </MudButton>
+            <MudButton Variant="Variant.Filled" 
+                     Color="Color.Primary" 
+                     OnClick="ApplyFilters"
+                     FullWidth="true">
+                Apply Filters
+            </MudButton>
+        </div>
+    </div>
+</div>
 
-    <MudGrid>
-        @foreach (var product in filteredProducts)
-        {
-            <MudItem xs="12" sm="6" md="4" lg="4" xl="4" xxl="3">
-                <MudCard>
-                    <MudCardHeader Class="mud-theme-primary">
-                        <div class="d-flex align-center">
-                            <i class="@productIconService.GetProductIcon(product.Category, GetSelectedColor(product.ProductId))"
-                               style="@productIconService.GetColorStyle(GetSelectedColor(product.ProductId)) font-size: 24px; margin-right: 10px;"></i>
-                            <div>
-                                <MudText Typo="Typo.h6">@product.ProductName</MudText>
-                                <MudText Typo="Typo.caption" Color="Color.Secondary">@product.Category</MudText>
-                            </div>
-                        </div>
-                        <MudSpacer />
-                        <MudChip Color="Color.Tertiary" T="string" Style="color: #000">@string.Concat("€" + @product.Price)</MudChip>
-                    </MudCardHeader>
-                    <MudCardContent>
-                        <MudGrid>
-                            <MudItem xs="6">
-                                <MudButton Class="mb-2"
-                                           OnClick="@(() => ToggleColours(product.ProductId))"
-                                           EndIcon="@(GetColourExpandedState(product.ProductId) ? Icons.Material.Filled.KeyboardArrowUp : Icons.Material.Filled.KeyboardArrowDown)">
-                                    Available Colors:
-                                </MudButton>
-                                <MudCollapse Expanded="@GetColourExpandedState(product.ProductId)">
-                                <div class="d-flex flex-wrap gap-2 circle-section">
-                                        @foreach (var colour in product.Colours)
-                                        {
-                                            <MudChip T="Colour"
-                                                     Value="@colour"
-                                                     OnClick="@(() => SelectColor(product.ProductId, colour))"
-                                                     Variant="GetSelectedColor(product.ProductId) == colour ? Variant.Filled : Variant.Outlined"
-                                                     Class="color-chip p-0"
-                                                     Style="@GetChipStyle(colour)">
-                                                ㅤ
-                                            </MudChip>
-                                        }
-                                    </div>
-                                </MudCollapse>
-                            </MudItem>
+<!-- Overlay -->
+@if (showFilters)
+{
+    <MudDrawerContainer Class="mud-height-full">
+        <MudDrawer @bind-Open="@showFilters" Elevation="0" Variant="@DrawerVariant.Persistent" Color="Color.Primary" @onclick="ToggleFilters">
 
-                            <MudItem xs="6">
-                                <MudButton Class="mb-2"
-                                           OnClick="@(() => ToggleSizes(product.ProductId))"
-                                           EndIcon="@(GetSizeExpandedState(product.ProductId) ? Icons.Material.Filled.KeyboardArrowUp : Icons.Material.Filled.KeyboardArrowDown)">
-                                    Available Sizes:
-                                </MudButton>
-                                <MudCollapse Expanded="@GetSizeExpandedState(product.ProductId)">
-                                    <div class="d-flex flex-wrap gap-2 circle-section">
-                                        @foreach (var size in product.Sizes)
-                                        {
-                                            <MudChip T="Thryft.Models.Size"
-                                                     Value="@size"
-                                                     OnClick="@(() => SelectSize(product.ProductId, size))"
-                                                     Color="GetSelectedSize(product.ProductId) == size ? Color.Primary : Color.Default"
-                                                     Variant="GetSelectedSize(product.ProductId) == size ? Variant.Filled : Variant.Outlined"
-                                                     Class="size-chip">
-                                                @size
-                                            </MudChip>
-                                        }
-                                    </div>
-                                </MudCollapse>
-                            </MudItem>
-                        </MudGrid>
-                    </MudCardContent>
-                    <MudCardActions>
-                        <MudGrid>
-                            <MudItem xs="8" Class="text-right">
-                                <MudText Typo="Typo.caption" Color="@(product.Stock > 0 ? Color.Success : Color.Error)">
-                                    @(product.Stock > 0 ? $"{product.Stock} left" : "Sold out")
-                                </MudText>
-                            </MudItem>
-                            <MudItem xs="4" Class="text-right">
-                                <MudSpacer />
-                                <MudButton Style="width: 100%"
-                                           Variant="Variant.Filled"
-                                           Color="Color.Primary"
-                                           Disabled="@(!CanAddToCart(product))"
-                                           OnClick="@(() => AddToCart(product))">
-                                    Add to Cart
-                                </MudButton>
-                            </MudItem>
-                        </MudGrid>
-                    </MudCardActions>
-                </MudCard>
+        </MudDrawer>
+
+    </MudDrawerContainer>
+}
+
+<MudGrid Class="my-2">
+    <MudItem xs="1" Class="d-flex align-center justify-end">
+        <MudGrid>
+            <MudItem xs="6">
+                <MudButton OnClick="ToggleFilters">Filters</MudButton>
             </MudItem>
-        }
-    </MudGrid>
+            <MudItem xs="6">
+                <MudMenu MaxHeight="300">
+                    <ActivatorContent>
+                        <MudButton EndIcon="@Icons.Material.Filled.ArrowDropDown">Sort</MudButton>
+                    </ActivatorContent>
+                    <ChildContent>
+                        <MudListItem T="string" Text="Name: A-Z" OnClick="@(() => SortProducts("name-asc"))" />
+                        <MudListItem T="string" Text="Name: Z-A" OnClick="@(() => SortProducts("name-desc"))" />
+                        <MudListItem T="string" Text="Price: Low to High" OnClick="@(() => SortProducts("price-asc"))" />
+                        <MudListItem T="string" Text="Price: High to Low" OnClick="@(() => SortProducts("price-desc"))" />
+                        <MudListItem T="string" Text="Stock: High to Low" OnClick="@(() => SortProducts("stock-desc"))" />
+                        <MudListItem T="string" Text="Stock: Low to High" OnClick="@(() => SortProducts("stock-asc"))" />
+                    </ChildContent>
+                </MudMenu>
+            </MudItem>
+        </MudGrid>
+    </MudItem>
+    <MudItem xs="10">
+        <MudTextField Value="@searchTerm"
+                      ValueChanged="@(async (string value) => await HandleSearchChanged(value))"
+                      T="string"
+                      Placeholder="Search Products..."
+                      Variant="Variant.Outlined"
+                      Margin="Margin.Dense"
+                      Clearable="true"
+                      Adornment="Adornment.End"
+                      AdornmentIcon="@Icons.Material.Outlined.Search"
+                      Immediate="true" />
+    </MudItem>
+    <MudItem xs="1" Class="d-flex align-center justify-end">
+        <MudIconButton Icon="@Icons.Material.Filled.ShoppingCart"
+                    OnClick="NavigateToCart"
+                    Color="Color.Primary" />
+        <MudText Typo="Typo.caption" Class="ml-2">@cartService.CurrentCart.TotalItems items</MudText>
+    </MudItem>
+</MudGrid>
+
+<MudGrid>
+    @foreach (var product in filteredProducts)
+    {
+        <MudItem xs="12" sm="6" md="4" lg="4" xl="4" xxl="3">
+            <MudCard>
+                <MudCardHeader Class="mud-theme-primary">
+                    <div class="d-flex align-center">
+                        <i class="@productIconService.GetProductIcon(product.Category, GetSelectedColor(product.ProductId))"
+                           style="@productIconService.GetColorStyle(GetSelectedColor(product.ProductId)) font-size: 24px; margin-right: 10px;"></i>
+                        <div>
+                            <MudText Typo="Typo.h6">@product.ProductName</MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">@product.Category</MudText>
+                        </div>
+                    </div>
+                    <MudSpacer />
+                    <MudChip Color="Color.Tertiary" T="string" Style="color: #000">@string.Concat("€" + @product.Price)</MudChip>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudGrid>
+                        <MudItem xs="6">
+                            <MudButton Class="mb-2"
+                                       OnClick="@(() => ToggleColours(product.ProductId))"
+                                       EndIcon="@(GetColourExpandedState(product.ProductId) ? Icons.Material.Filled.KeyboardArrowUp : Icons.Material.Filled.KeyboardArrowDown)">
+                                Available Colors:
+                            </MudButton>
+                            <MudCollapse Expanded="@GetColourExpandedState(product.ProductId)">
+                            <div class="d-flex flex-wrap gap-2 circle-section">
+                                    @foreach (var colour in product.Colours)
+                                    {
+                                        <MudChip T="Colour"
+                                                 Value="@colour"
+                                                 OnClick="@(() => SelectColor(product.ProductId, colour))"
+                                                 Variant="GetSelectedColor(product.ProductId) == colour ? Variant.Filled : Variant.Outlined"
+                                                 Class="color-chip p-0"
+                                                 Style="@GetChipStyle(colour)">
+                                            ㅤ
+                                            @* do not delete above line... is an invisible character *@
+                                        </MudChip>
+                                    }
+                                </div>
+                            </MudCollapse>
+                        </MudItem>
+
+                        <MudItem xs="6">
+                            <MudButton Class="mb-2"
+                                       OnClick="@(() => ToggleSizes(product.ProductId))"
+                                       EndIcon="@(GetSizeExpandedState(product.ProductId) ? Icons.Material.Filled.KeyboardArrowUp : Icons.Material.Filled.KeyboardArrowDown)">
+                                Available Sizes:
+                            </MudButton>
+                            <MudCollapse Expanded="@GetSizeExpandedState(product.ProductId)">
+                                <div class="d-flex flex-wrap gap-2 circle-section">
+                                    @foreach (var size in product.Sizes)
+                                    {
+                                        <MudChip T="Thryft.Models.Size"
+                                                 Value="@size"
+                                                 OnClick="@(() => SelectSize(product.ProductId, size))"
+                                                 Color="GetSelectedSize(product.ProductId) == size ? Color.Primary : Color.Default"
+                                                 Variant="GetSelectedSize(product.ProductId) == size ? Variant.Filled : Variant.Outlined"
+                                                 Class="size-chip">
+                                            @size
+                                        </MudChip>
+                                    }
+                                </div>
+                            </MudCollapse>
+                        </MudItem>
+                    </MudGrid>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudGrid>
+                        <MudItem xs="8" Class="text-right">
+                            <MudText Typo="Typo.caption" Color="@(product.Stock > 0 ? Color.Success : Color.Error)">
+                                @(product.Stock > 0 ? $"{product.Stock} left" : "Sold out")
+                            </MudText>
+                        </MudItem>
+                        <MudItem xs="4" Class="text-right">
+                            <MudSpacer />
+                            <MudButton Style="width: 100%"
+                                       Variant="Variant.Filled"
+                                       Color="Color.Primary"
+                                       Disabled="@(!CanAddToCart(product))"
+                                       OnClick="@(() => AddToCart(product))">
+                                Add to Cart
+                            </MudButton>
+                        </MudItem>
+                    </MudGrid>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+    }
+</MudGrid>
 
 @code {
     private List<User> users;
     private List<Product> allProducts;
     private List<Product> filteredProducts;
     private string searchTerm = string.Empty;
+
+    // Filter states
+    private bool showFilters = false;
+    private HashSet<string> selectedCategories = new HashSet<string>();
+    private HashSet<Colour> selectedColorsFilter = new HashSet<Colour>();
+    private decimal minPriceFilter = 0;
+    private decimal maxPriceFilter = 1000;
+    private bool showInStockOnly = false;
+    private decimal maxPrice = 1000;
+    private string currentSort = "name-asc";
 
     // Use dictionaries to track expanded state and selections per product
     private Dictionary<int, bool> colourExpandedStates = new Dictionary<int, bool>();
@@ -159,7 +302,102 @@
             sizeExpandedStates[product.ProductId] = true;
         }
 
+        // Set max price based on actual products
+        maxPrice = allProducts.Any() ? allProducts.Max(p => p.Price) : 1000;
+        maxPriceFilter = maxPrice;
+
         cartService.OnCartUpdated += StateHasChanged;
+    }
+
+    private void ToggleFilters()
+    {
+        showFilters = !showFilters;
+        StateHasChanged();
+    }
+
+    private void ToggleCategoryFilter(string category, bool isChecked)
+    {
+        if (isChecked)
+            selectedCategories.Add(category);
+        else
+            selectedCategories.Remove(category);
+        StateHasChanged();
+    }
+
+    private void ToggleColorFilter(Colour color)
+    {
+        if (selectedColorsFilter.Contains(color))
+            selectedColorsFilter.Remove(color);
+        else
+            selectedColorsFilter.Add(color);
+        StateHasChanged();
+    }
+
+    private async Task OnMinPriceChanged(decimal value)
+    {
+        minPriceFilter = value;
+        await Task.CompletedTask;
+    }
+
+    private async Task OnMaxPriceChanged(decimal value)
+    {
+        maxPriceFilter = value;
+        await Task.CompletedTask;
+    }
+
+    private async Task ToggleInStockFilter(bool isChecked)
+    {
+        showInStockOnly = isChecked;
+        await Task.CompletedTask;
+    }
+
+    private void ClearAllFilters()
+    {
+        selectedCategories.Clear();
+        selectedColorsFilter.Clear();
+        minPriceFilter = 0;
+        maxPriceFilter = maxPrice;
+        showInStockOnly = false;
+        StateHasChanged();
+    }
+
+    private void ApplyFilters()
+    {
+        FilterProducts();
+        showFilters = false;
+        StateHasChanged();
+    }
+
+    private void SortProducts(string sortOption)
+    {
+        currentSort = sortOption;
+        
+        var query = filteredProducts.AsEnumerable();
+
+        switch (sortOption)
+        {
+            case "name-asc":
+                query = query.OrderBy(p => p.ProductName);
+                break;
+            case "name-desc":
+                query = query.OrderByDescending(p => p.ProductName);
+                break;
+            case "price-asc":
+                query = query.OrderBy(p => p.Price);
+                break;
+            case "price-desc":
+                query = query.OrderByDescending(p => p.Price);
+                break;
+            case "stock-desc":
+                query = query.OrderByDescending(p => p.Stock);
+                break;
+            case "stock-asc":
+                query = query.OrderBy(p => p.Stock);
+                break;
+        }
+
+        filteredProducts = query.ToList();
+        StateHasChanged();
     }
 
     private bool CanAddToCart(Product product)
@@ -255,32 +493,54 @@
 
     private void FilterProducts()
     {
-        if (string.IsNullOrWhiteSpace(searchTerm))
+        IEnumerable<Product> currentResults = allProducts;
+
+        // Apply search term filter
+        if (!string.IsNullOrWhiteSpace(searchTerm))
         {
-            filteredProducts = allProducts;
-            return;
+            var searchTerms = searchTerm.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                                      .Select(term => term.Trim().ToLowerInvariant())
+                                      .ToArray();
+
+            foreach (var term in searchTerms)
+            {
+                currentResults = currentResults.Where(product =>
+                {
+                    var nameMatches = product.ProductName?.Contains(term, StringComparison.OrdinalIgnoreCase) == true;
+                    var categoryMatches = product.Category?.Contains(term, StringComparison.OrdinalIgnoreCase) == true;
+                    var colorMatches = product.Colours?.Any(color =>
+                        color.ToString().Contains(term, StringComparison.OrdinalIgnoreCase)) == true;
+
+                    return nameMatches || categoryMatches || colorMatches;
+                });
+            }
         }
 
-        var searchTerms = searchTerm.Split(' ', StringSplitOptions.RemoveEmptyEntries)
-                                  .Select(term => term.Trim().ToLowerInvariant())
-                                  .ToArray();
-
-        filteredProducts = allProducts.Where(product =>
+        // Apply category filters
+        if (selectedCategories.Any())
         {
-            var nameMatches = searchTerms.Any(term =>
-                product.ProductName?.Contains(term, StringComparison.OrdinalIgnoreCase) == true);
+            currentResults = currentResults.Where(p => selectedCategories.Contains(p.Category));
+        }
 
-            var categoryMatches = searchTerms.Any(term =>
-                product.Category?.Contains(term, StringComparison.OrdinalIgnoreCase) == true);
+        // Apply price range filter
+        currentResults = currentResults.Where(p => p.Price >= minPriceFilter && p.Price <= maxPriceFilter);
 
-            var colorMatches = searchTerms.Any(term =>
-                product.Colours?.Any(color =>
-                    color.ToString().Contains(term, StringComparison.OrdinalIgnoreCase)) == true);
+        // Apply stock filter
+        if (showInStockOnly)
+        {
+            currentResults = currentResults.Where(p => p.Stock > 0);
+        }
 
-            return nameMatches || categoryMatches || colorMatches;
-        }).ToList();
+        // Apply color filters
+        if (selectedColorsFilter.Any())
+        {
+            currentResults = currentResults.Where(p => p.Colours.Any(c => selectedColorsFilter.Contains(c)));
+        }
 
-        StateHasChanged();
+        filteredProducts = currentResults.ToList();
+        
+        // Apply current sort
+        SortProducts(currentSort);
     }
 
     private string GetChipStyle(Colour colour)

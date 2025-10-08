@@ -21,6 +21,7 @@ namespace Thryft.Services
                 "electronics" => "fa-laptop",
                 "book" => "fa-book",
                 "sports" => "fa-basketball-ball",
+                "accessories" => "fa-brands fa-black-tie",
                 _ => "fa-cube"
             };
 
