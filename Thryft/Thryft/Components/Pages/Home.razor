@@ -40,7 +40,7 @@
 <PageTitle>Home</PageTitle>
 
 <!-- Filter Sidebar -->
-<div class="filter-sidebar position-fixed top-0 start-0 h-100 bg-white z-index-5 shadow @(showFilters ? "open" : "closed")" style="width: 320px;">
+<div class="filter-sidebar position-fixed top-0 start-0 h-100 bg-white z-index-2500 shadow @(showFilters ? "open" : "closed")" style="width: 320px;">
     <div class="p-4 h-100 d-flex flex-column">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <MudText Typo="Typo.h6" Class="m-0">Filters</MudText>
@@ -60,24 +60,7 @@
             }
             
             <MudDivider Class="my-4" />
-            
-            <!-- Price Range Filter -->
-            <MudText Typo="Typo.subtitle1" Class="mb-3">Price Range</MudText>
-            <MudRangeSlider T="decimal" 
-                          Min="0" 
-                          Max="@(maxPrice)" 
-                          MinValue="@minPriceFilter" 
-                          MaxValue="@maxPriceFilter"
-                          MinValueChanged="@(async (decimal value) => await OnMinPriceChanged(value))"
-                          MaxValueChanged="@(async (decimal value) => await OnMaxPriceChanged(value))"
-                          Immediate="true" />
-            <div class="d-flex justify-content-between">
-                <MudText Typo="Typo.caption">€@minPriceFilter</MudText>
-                <MudText Typo="Typo.caption">€@maxPriceFilter</MudText>
-            </div>
-            
-            <MudDivider Class="my-4" />
-            
+
             <!-- Stock Filter -->
             <MudText Typo="Typo.subtitle1" Class="mb-3">Stock Status</MudText>
             <MudCheckBox T="bool" 
@@ -123,16 +106,7 @@
     </div>
 </div>
 
-<!-- Overlay -->
-@if (showFilters)
-{
-    <MudDrawerContainer Class="mud-height-full">
-        <MudDrawer @bind-Open="@showFilters" Elevation="0" Variant="@DrawerVariant.Persistent" Color="Color.Primary" @onclick="ToggleFilters">
 
-        </MudDrawer>
-
-    </MudDrawerContainer>
-}
 
 <MudGrid Class="my-2">
     <MudItem xs="1" Class="d-flex align-center justify-end">
@@ -141,7 +115,7 @@
                 <MudButton OnClick="ToggleFilters">Filters</MudButton>
             </MudItem>
             <MudItem xs="6">
-                <MudMenu MaxHeight="300">
+                @* <MudMenu MaxHeight="300">
                     <ActivatorContent>
                         <MudButton EndIcon="@Icons.Material.Filled.ArrowDropDown">Sort</MudButton>
                     </ActivatorContent>
@@ -153,7 +127,7 @@
                         <MudListItem T="string" Text="Stock: High to Low" OnClick="@(() => SortProducts("stock-desc"))" />
                         <MudListItem T="string" Text="Stock: Low to High" OnClick="@(() => SortProducts("stock-asc"))" />
                     </ChildContent>
-                </MudMenu>
+                </MudMenu> *@
             </MudItem>
         </MudGrid>
     </MudItem>
@@ -177,7 +151,7 @@
     </MudItem>
 </MudGrid>
 
-<MudGrid>
+<MudGrid Class="z-index-1500">
     @foreach (var product in filteredProducts)
     {
         <MudItem xs="12" sm="6" md="4" lg="4" xl="4" xxl="3">
@@ -293,18 +267,26 @@
     protected override async Task OnInitializedAsync()
     {
         allProducts = await productService.GetProductsAsync();
-        filteredProducts = allProducts;
+        filteredProducts = allProducts ?? new List<Product>(); // Handle null case
 
         // Initialize expanded states for all products
-        foreach (var product in allProducts)
+        if (allProducts != null)
         {
-            colourExpandedStates[product.ProductId] = true;
-            sizeExpandedStates[product.ProductId] = true;
-        }
+            foreach (var product in allProducts)
+            {
+                colourExpandedStates[product.ProductId] = true;
+                sizeExpandedStates[product.ProductId] = true;
+            }
 
-        // Set max price based on actual products
-        maxPrice = allProducts.Any() ? allProducts.Max(p => p.Price) : 1000;
-        maxPriceFilter = maxPrice;
+            // Set max price based on actual products
+            maxPrice = allProducts.Any() ? allProducts.Max(p => p.Price) : 1000;
+            maxPriceFilter = maxPrice;
+        }
+        else
+        {
+            allProducts = new List<Product>();
+            filteredProducts = new List<Product>();
+        }
 
         cartService.OnCartUpdated += StateHasChanged;
     }
