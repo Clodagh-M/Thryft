@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using System.Text;
 using Thryft.Data;
 using Thryft.Models;
@@ -58,5 +59,19 @@ public class UserService
         using var context = _contextFactory.CreateDbContext();
         context.Users.Add(user);
         await context.SaveChangesAsync();
+    }
+
+    public async Task<User?> GetCurrentUserAsync(ClaimsPrincipal principal)
+    {
+        if (principal?.Identity?.IsAuthenticated != true)
+            return null;
+
+        var email = principal.FindFirst(ClaimTypes.Email)?.Value
+                    ?? principal.Identity?.Name;
+
+        if (string.IsNullOrWhiteSpace(email))
+            return null;
+
+        return await GetUserAsync(email);
     }
 }
