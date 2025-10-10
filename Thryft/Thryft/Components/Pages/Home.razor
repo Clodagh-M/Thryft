@@ -11,30 +11,50 @@
 
 @rendermode InteractiveServer
 
+
 <style>
+    .filter-sidebar {
+        transition: transform 0.3s ease-in-out;
+        z-index: 2500 !important;
+    }
+
+    .filter-sidebar.closed {
+        transform: translateX(-100%);
+    }
+
+    .filter-sidebar.open {
+        transform: translateX(0);
+    }
+
+    .filter-overlay {
+        background-color: rgba(0, 0, 0, 0.5);
+        transition: opacity 0.3s ease-in-out;
+        z-index: 2400 !important;
+        pointer-events: none !important; /* This is the key fix */
+    }
+
+    .mud-grid.z-index-1500 {
+        z-index: 1500 !important;
+        position: relative;
+    }
+
     .circle-section {
         height: 70px;
         width: 230px;
         overflow: scroll;
         scrollbar-width: none;
     }
-    
-    .filter-sidebar {
-        transition: transform 0.3s ease-in-out;
+
+    .selected-color {
+        transform: scale(1.2);
+        z-index: 1;
+        position: relative;
     }
-    
-    .filter-sidebar.closed {
-        transform: translateX(-100%);
+
+    .circle-section {
+        align-items: center;
     }
-    
-    .filter-sidebar.open {
-        transform: translateX(0);
-    }
-    
-    .filter-overlay {
-        background-color: rgba(0, 0, 0, 0.5);
-        transition: opacity 0.3s ease-in-out;
-    }
+
 </style>
 
 <PageTitle>Home</PageTitle>
@@ -91,14 +111,14 @@
         <div class="mt-auto pt-3">
             <MudButton Variant="Variant.Filled" 
                      Color="Color.Secondary" 
-                     OnClick="ClearAllFilters"
+                     OnClick="@(() => ClearAllFilters())"
                      FullWidth="true"
                      Class="mb-2">
                 Clear All Filters
             </MudButton>
             <MudButton Variant="Variant.Filled" 
                      Color="Color.Primary" 
-                     OnClick="ApplyFilters"
+                     OnClick="@(() => ApplyFilters())"
                      FullWidth="true">
                 Apply Filters
             </MudButton>
@@ -106,7 +126,12 @@
     </div>
 </div>
 
-
+@if (showFilters)
+{
+    <div class="filter-overlay position-fixed top-0 start-0 w-100 h-100 z-index-2400"
+         style="pointer-events: none;"
+         @onclick="ToggleFilters"></div>
+}
 
 <MudGrid Class="my-2">
     <MudItem xs="1" Class="d-flex align-center justify-end">
@@ -114,21 +139,16 @@
             <MudItem xs="6">
                 <MudButton OnClick="ToggleFilters">Filters</MudButton>
             </MudItem>
-            <MudItem xs="6">
-                @* <MudMenu MaxHeight="300">
-                    <ActivatorContent>
-                        <MudButton EndIcon="@Icons.Material.Filled.ArrowDropDown">Sort</MudButton>
-                    </ActivatorContent>
-                    <ChildContent>
-                        <MudListItem T="string" Text="Name: A-Z" OnClick="@(() => SortProducts("name-asc"))" />
-                        <MudListItem T="string" Text="Name: Z-A" OnClick="@(() => SortProducts("name-desc"))" />
-                        <MudListItem T="string" Text="Price: Low to High" OnClick="@(() => SortProducts("price-asc"))" />
-                        <MudListItem T="string" Text="Price: High to Low" OnClick="@(() => SortProducts("price-desc"))" />
-                        <MudListItem T="string" Text="Stock: High to Low" OnClick="@(() => SortProducts("stock-desc"))" />
-                        <MudListItem T="string" Text="Stock: Low to High" OnClick="@(() => SortProducts("stock-asc"))" />
-                    </ChildContent>
-                </MudMenu> *@
-            </MudItem>
+           @*  <MudItem xs="6">
+                <MudMenu EndIcon="@Icons.Material.Filled.ArrowDropDown" Label="Sort">
+                    <MudMenuItem Label="Name: A-Z" OnClick="@(() => SortProducts("name-asc"))" />
+                    <MudMenuItem Label="Name: Z-A" OnClick="@(() => SortProducts("name-desc"))" />
+                    <MudMenuItem Label="Price: Low to High" OnClick="@(() => SortProducts("price-asc"))" />
+                    <MudMenuItem Label="Price: High to Low" OnClick="@(() => SortProducts("price-desc"))" />
+                    <MudMenuItem Label="Stock: High to Low" OnClick="@(() => SortProducts("stock-desc"))" />
+                    <MudMenuItem Label="Stock: Low to High" OnClick="@(() => SortProducts("stock-asc"))" />
+                </MudMenu>
+            </MudItem> *@
         </MudGrid>
     </MudItem>
     <MudItem xs="10">
@@ -177,17 +197,16 @@
                                 Available Colors:
                             </MudButton>
                             <MudCollapse Expanded="@GetColourExpandedState(product.ProductId)">
-                            <div class="d-flex flex-wrap gap-2 circle-section">
+                                <div class="d-flex flex-wrap gap-2 circle-section align-center">
                                     @foreach (var colour in product.Colours)
                                     {
                                         <MudChip T="Colour"
-                                                 Value="@colour"
-                                                 OnClick="@(() => SelectColor(product.ProductId, colour))"
-                                                 Variant="GetSelectedColor(product.ProductId) == colour ? Variant.Filled : Variant.Outlined"
-                                                 Class="color-chip p-0"
-                                                 Style="@GetChipStyle(colour)">
-                                            ㅤ
-                                            @* do not delete above line... is an invisible character *@
+                                                    Value="@colour"
+                                                    OnClick="@(() => SelectColor(product.ProductId, colour))"
+                                                    Variant="GetSelectedColor(product.ProductId) == colour ? Variant.Filled : Variant.Outlined"
+                                                    Class="@GetChipClass(product.ProductId, colour)"
+                                                    Style="@GetChipStyle(colour)">
+                                            <span>ㅤ</span>
                                         </MudChip>
                                     }
                                 </div>
@@ -267,9 +286,8 @@
     protected override async Task OnInitializedAsync()
     {
         allProducts = await productService.GetProductsAsync();
-        filteredProducts = allProducts ?? new List<Product>(); // Handle null case
+        filteredProducts = allProducts ?? new List<Product>();
 
-        // Initialize expanded states for all products
         if (allProducts != null)
         {
             foreach (var product in allProducts)
@@ -278,7 +296,6 @@
                 sizeExpandedStates[product.ProductId] = true;
             }
 
-            // Set max price based on actual products
             maxPrice = allProducts.Any() ? allProducts.Max(p => p.Price) : 1000;
             maxPriceFilter = maxPrice;
         }
@@ -288,7 +305,17 @@
             filteredProducts = new List<Product>();
         }
 
-        cartService.OnCartUpdated += StateHasChanged;
+        // Use a safe event subscription pattern
+        cartService.OnCartUpdated += OnCartUpdated;
+    }
+
+    private void OnCartUpdated()
+    {
+        // Check if component is still rendered before calling StateHasChanged
+        if (!_disposed)
+        {
+            InvokeAsync(StateHasChanged);
+        }
     }
 
     private void ToggleFilters()
@@ -331,6 +358,14 @@
     {
         showInStockOnly = isChecked;
         await Task.CompletedTask;
+    }
+
+    private string GetChipClass(int productId, Colour colour)
+    {
+        var baseClass = "color-chip p-0";
+        return GetSelectedColor(productId) == colour
+            ? $"{baseClass} selected-color"
+            : baseClass;
     }
 
     private void ClearAllFilters()
@@ -571,8 +606,11 @@
         };
     }
 
+    private bool _disposed = false;
+
     public void Dispose()
     {
-        cartService.OnCartUpdated -= StateHasChanged;
+        _disposed = true;
+        cartService.OnCartUpdated -= OnCartUpdated;
     }
 }
