@@ -147,6 +147,7 @@
     protected override void OnInitialized()
     {
         cartService.OnCartUpdated += StateHasChanged;
+        StateHasChanged();
     }
 
     private string GetProductCategory(int productId)

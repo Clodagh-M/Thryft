@@ -164,11 +164,12 @@
 
     protected override void OnInitialized()
     {
-        if (!cartService.CurrentCart.Items.Any())
-        {
-            Navigation.NavigateTo("/cart");
-            return;
-        }
+        // Add a small delay to ensure the cart service is properly initialized
+        // if (!cartService.CurrentCart.Items.Any())
+        // {
+        //     Navigation.NavigateTo("/cart");
+        //     return;
+        // }
 
         _totalAmount = cartService.CurrentCart.TotalPrice + 5.00m;
     }

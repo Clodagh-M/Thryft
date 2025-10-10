@@ -1,17 +1,25 @@
 ﻿using Thryft.Models;
+using Microsoft.JSInterop;
+using System.Text.Json;
 
 namespace Thryft.Services
 {
     public class CartService
     {
-        public Cart CurrentCart { get; private set; } = new Cart();
+        private readonly IJSRuntime _jsRuntime;
+        private const string CartStorageKey = "thryft_cart";
 
+        public Cart CurrentCart { get; private set; } = new Cart();
         public event Action? OnCartUpdated;
 
-        public void AddToCart(Product product, Colour? color, Size? size, int quantity = 1)
+        public CartService(IJSRuntime jsRuntime)
         {
-            Console.WriteLine($"CartService: Adding {product.ProductName} to cart");
+            _jsRuntime = jsRuntime;
+            LoadCartFromStorage();
+        }
 
+        public async void AddToCart(Product product, Colour? color, Size? size, int quantity = 1)
+        {
             var cartItem = new CartItem
             {
                 ProductId = product.ProductId,
@@ -23,28 +31,59 @@ namespace Thryft.Services
             };
 
             CurrentCart.AddItem(cartItem);
-            Console.WriteLine($"CartService: Cart now has {CurrentCart.TotalItems} items");
-
+            await SaveCartToStorage();
             OnCartUpdated?.Invoke();
-            Console.WriteLine($"CartService: OnCartUpdated event fired");
         }
 
-        public void RemoveFromCart(int productId, Colour? color, Size? size)
+        public async void RemoveFromCart(int productId, Colour? color, Size? size)
         {
             CurrentCart.RemoveItem(productId, color, size);
+            await SaveCartToStorage();
             OnCartUpdated?.Invoke();
         }
 
-        public void UpdateQuantity(int productId, Colour? color, Size? size, int quantity)
+        public async void UpdateQuantity(int productId, Colour? color, Size? size, int quantity)
         {
             CurrentCart.UpdateQuantity(productId, color, size, quantity);
+            await SaveCartToStorage();
             OnCartUpdated?.Invoke();
         }
 
-        public void ClearCart()
+        public async void ClearCart()
         {
             CurrentCart.Clear();
+            await SaveCartToStorage();
             OnCartUpdated?.Invoke();
+        }
+
+        private async Task LoadCartFromStorage()
+        {
+            try
+            {
+                var cartJson = await _jsRuntime.InvokeAsync<string>("localStorage.getItem", CartStorageKey);
+                if (!string.IsNullOrEmpty(cartJson))
+                {
+                    CurrentCart = JsonSerializer.Deserialize<Cart>(cartJson) ?? new Cart();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error loading cart from storage: {ex.Message}");
+                CurrentCart = new Cart();
+            }
+        }
+
+        private async Task SaveCartToStorage()
+        {
+            try
+            {
+                var cartJson = JsonSerializer.Serialize(CurrentCart);
+                await _jsRuntime.InvokeVoidAsync("localStorage.setItem", CartStorageKey, cartJson);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error saving cart to storage: {ex.Message}");
+            }
         }
     }
 }
