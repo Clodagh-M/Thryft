@@ -161,6 +161,8 @@
     private string? _errorMessage;
     private string _orderId = Guid.NewGuid().ToString()[..8].ToUpper();
 
+    private int _currentUserId = 1;
+
     private ShippingInfo _shippingInfo = new();
     private PaymentInfo _paymentInfo = new();
 
@@ -179,7 +181,7 @@
         _totalAmount = cartService.CurrentCart.TotalPrice + 5.00m;
 
         // Get current user ID
-        await GetCurrentUserId();
+        // await GetCurrentUserId();
     }
 
     private async Task GetCurrentUserId()
@@ -296,11 +298,17 @@
 
     private async Task<bool> CreateOrderInDatabase()
     {
+        if (OrderService == null)
+        {
+            Logger.LogError("OrderService is null - check if it's registered in DI container");
+            return false;
+        }
+
         try
         {
             var order = new Order
             {
-                UserId = _currentUserId, // You'll need to get this from your authentication system
+                UserId = _currentUserId,
                 Total = _totalAmount,
                 Created = DateTime.UtcNow,
                 Status = "Completed",
@@ -308,23 +316,34 @@
                 {
                     ProductId = item.ProductId,
                     Quantity = item.Quantity,
-                    UnitPrice = item.Price, // Make sure your CartItem has UnitPrice
+                    UnitPrice = item.Price,
                     SelectedColour = item.SelectedColor,
                     SelectedSize = item.SelectedSize
                 }).ToList()
             };
 
+            Logger.LogInformation("Attempting to create order for user {UserId} with {ItemCount} items",
+                _currentUserId, order.OrderItems.Count);
+
             var createdOrder = await OrderService.CreateOrderAsync(order);
-            _orderId = createdOrder.OrderId.ToString(); // Use the actual database order ID
+
+            if (createdOrder == null)
+            {
+                Logger.LogError("OrderService.CreateOrderAsync returned null");
+                return false;
+            }
+
+            _orderId = createdOrder.OrderId.ToString();
+            Logger.LogInformation("Order created successfully with ID: {OrderId}", _orderId);
             return true;
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Error creating order in database");
+            Logger.LogError(ex, "Error creating order in database. UserId: {UserId}, Total: {Total}",
+                _currentUserId, _totalAmount);
             return false;
         }
     }
-    private int _currentUserId = 1;
 
     private async Task RestoreReducedInventory(List<(int ProductId, Colour? Color, Thryft.Models.Size? Size, int Quantity)> reducedItems)
     {
@@ -409,7 +428,7 @@
         // Simulate payment processing with 90% success rate
         await Task.Delay(1000);
         var random = new Random();
-        return random.NextDouble() < 0.9; // 90% success rate
+        return random.NextDouble() < 1; // 90% success rate
     }
 
     private void ReturnToCart()
