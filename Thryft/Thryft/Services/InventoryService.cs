@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Thryft.Data;
 using Thryft.Models;
 
 namespace Thryft.Services
@@ -6,29 +8,45 @@ namespace Thryft.Services
     public class InventoryService
     {
         private readonly ILogger<InventoryService> _logger;
+        private readonly AppDbContext _context;
 
-        // In a real application, this would be a database context or API service
-        private readonly Dictionary<string, int> _inventory = new();
-
-        public InventoryService(ILogger<InventoryService> logger)
+        public InventoryService(ILogger<InventoryService> logger, AppDbContext context)
         {
             _logger = logger;
+            _context = context;
         }
 
         public async Task<bool> ReduceInventory(int productId, Colour? color, Size? size, int quantity)
         {
             try
             {
-                // Simulate API/database call
-                await Task.Delay(100);
+                // Find the product in the database
+                var product = await _context.Products.FindAsync(productId);
 
-                var key = GetInventoryKey(productId, color, size);
+                if (product == null)
+                {
+                    _logger.LogWarning("Product {ProductId} not found in inventory", productId);
+                    return false;
+                }
 
-                // For demo purposes, we'll assume items are always available
-                // In a real app, you'd check current stock levels
+                // Check if there's enough stock
+                if (product.Stock < quantity)
+                {
+                    _logger.LogWarning(
+                        "Insufficient stock for product {ProductId}. Requested: {Quantity}, Available: {Stock}",
+                        productId, quantity, product.Stock);
+                    return false;
+                }
+
+                // Reduce the stock
+                product.Stock -= quantity;
+
+                // Save changes to database
+                await _context.SaveChangesAsync();
+
                 _logger.LogInformation(
-                    "Reduced inventory for product {ProductId}, color: {Color}, size: {Size} by {Quantity}",
-                    productId, color, size, quantity);
+                    "Reduced inventory for product {ProductId} by {Quantity}. New stock: {NewStock}",
+                    productId, quantity, product.Stock);
 
                 return true;
             }
@@ -41,16 +59,47 @@ namespace Thryft.Services
 
         public async Task<int> GetCurrentStock(int productId, Colour? color, Size? size)
         {
-            // Simulate getting current stock levels
-            await Task.Delay(50);
-
-            var key = GetInventoryKey(productId, color, size);
-            return _inventory.ContainsKey(key) ? _inventory[key] : new Random().Next(5, 20);
+            try
+            {
+                var product = await _context.Products.FindAsync(productId);
+                return product?.Stock ?? 0;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting current stock for product {ProductId}", productId);
+                return 0;
+            }
         }
 
-        private static string GetInventoryKey(int productId, Colour? color, Size? size)
+        // Optional: Method to restore inventory if order fails
+        public async Task<bool> RestoreInventory(int productId, Colour? color, Size? size, int quantity)
         {
-            return $"{productId}-{color}-{size}";
+            try
+            {
+                var product = await _context.Products.FindAsync(productId);
+
+                if (product == null)
+                {
+                    _logger.LogWarning("Product {ProductId} not found when restoring inventory", productId);
+                    return false;
+                }
+
+                // Restore the stock
+                product.Stock += quantity;
+
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation(
+                    "Restored inventory for product {ProductId} by {Quantity}. New stock: {NewStock}",
+                    productId, quantity, product.Stock);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error restoring inventory for product {ProductId}", productId);
+                return false;
+            }
         }
     }
 }

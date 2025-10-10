@@ -1,4 +1,6 @@
 ﻿@page "/checkout"
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
 @using Thryft.Models
 @using Thryft.Services
 
@@ -25,7 +27,7 @@
                 {
                     <div class="d-flex justify-space-between mb-2">
                         <MudText Typo="Typo.body2">
-                            @item.ProductName x @item.Quantity
+                            @item.ProductName (@item.SelectedColor)(@item.SelectedSize) x @item.Quantity
                         </MudText>
                         <MudText Typo="Typo.body2">€@item.TotalPrice</MudText>
                     </div>
@@ -162,7 +164,10 @@
     private ShippingInfo _shippingInfo = new();
     private PaymentInfo _paymentInfo = new();
 
-    protected override void OnInitialized()
+    [Inject] private OrderService? OrderService { get; set; }
+    [Inject] private AuthenticationStateProvider? AuthenticationStateProvider { get; set; }
+
+    protected override async Task OnInitializedAsync()
     {
         // Add a small delay to ensure the cart service is properly initialized
         // if (!cartService.CurrentCart.Items.Any())
@@ -172,6 +177,27 @@
         // }
 
         _totalAmount = cartService.CurrentCart.TotalPrice + 5.00m;
+
+        // Get current user ID
+        await GetCurrentUserId();
+    }
+
+    private async Task GetCurrentUserId()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity.IsAuthenticated)
+        {
+            // Get user ID from claims - adjust this based on your authentication setup
+            var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                           ?? user.FindFirst("sub")?.Value;
+
+            if (int.TryParse(userIdClaim, out int userId))
+            {
+                _currentUserId = userId;
+            }
+        }
     }
 
     private async Task ProcessOrder()
@@ -185,20 +211,37 @@
         _errorMessage = null;
         StateHasChanged();
 
+        // Track which items we've successfully reduced inventory for
+        var reducedItems = new List<(int ProductId, Colour? Color, Thryft.Models.Size? Size, int Quantity)>();
+
         try
         {
             // Simulate processing delay
             await Task.Delay(2000);
 
             // Reduce inventory quantities
-            var reductionSuccessful = await ReduceInventoryQuantities();
-
-            if (!reductionSuccessful)
+            foreach (var item in cartService.CurrentCart.Items)
             {
-                _errorMessage = "Some items are no longer available in the requested quantities. Please review your cart.";
-                _isProcessing = false;
-                StateHasChanged();
-                return;
+                var success = await inventoryService.ReduceInventory(
+                    item.ProductId,
+                    item.SelectedColor,
+                    item.SelectedSize,
+                    item.Quantity);
+
+                if (success)
+                {
+                    reducedItems.Add((item.ProductId, item.SelectedColor, item.SelectedSize, item.Quantity));
+                }
+                else
+                {
+                    // If any item fails, restore inventory for previously reduced items
+                    await RestoreReducedInventory(reducedItems);
+
+                    _errorMessage = $"Item '{item.ProductName}' is no longer available in the requested quantity. Please review your cart.";
+                    _isProcessing = false;
+                    StateHasChanged();
+                    return;
+                }
             }
 
             // Simulate payment processing
@@ -206,7 +249,24 @@
 
             if (!paymentSuccessful)
             {
+                // If payment fails, restore all inventory
+                await RestoreReducedInventory(reducedItems);
+
                 _errorMessage = "Payment processing failed. Please check your payment information and try again.";
+                _isProcessing = false;
+                StateHasChanged();
+                return;
+            }
+
+            // Create and save order to database
+            var orderSuccess = await CreateOrderInDatabase();
+
+            if (!orderSuccess)
+            {
+                // If order creation fails, restore all inventory
+                await RestoreReducedInventory(reducedItems);
+
+                _errorMessage = "Failed to create order. Please try again.";
                 _isProcessing = false;
                 StateHasChanged();
                 return;
@@ -221,6 +281,9 @@
         }
         catch (Exception ex)
         {
+            // If any exception occurs, restore all inventory
+            await RestoreReducedInventory(reducedItems);
+
             _errorMessage = "An error occurred while processing your order. Please try again.";
             Logger.LogError(ex, "Error processing order");
         }
@@ -228,6 +291,50 @@
         {
             _isProcessing = false;
             StateHasChanged();
+        }
+    }
+
+    private async Task<bool> CreateOrderInDatabase()
+    {
+        try
+        {
+            var order = new Order
+            {
+                UserId = _currentUserId, // You'll need to get this from your authentication system
+                Total = _totalAmount,
+                Created = DateTime.UtcNow,
+                Status = "Completed",
+                OrderItems = cartService.CurrentCart.Items.Select(item => new OrderItem
+                {
+                    ProductId = item.ProductId,
+                    Quantity = item.Quantity,
+                    UnitPrice = item.Price, // Make sure your CartItem has UnitPrice
+                    SelectedColour = item.SelectedColor,
+                    SelectedSize = item.SelectedSize
+                }).ToList()
+            };
+
+            var createdOrder = await OrderService.CreateOrderAsync(order);
+            _orderId = createdOrder.OrderId.ToString(); // Use the actual database order ID
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error creating order in database");
+            return false;
+        }
+    }
+    private int _currentUserId = 1;
+
+    private async Task RestoreReducedInventory(List<(int ProductId, Colour? Color, Thryft.Models.Size? Size, int Quantity)> reducedItems)
+    {
+        foreach (var item in reducedItems)
+        {
+            await inventoryService.RestoreInventory(
+                item.ProductId,
+                item.Color,
+                item.Size,
+                item.Quantity);
         }
     }
 
