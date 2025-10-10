@@ -11,26 +11,25 @@
 
 @rendermode InteractiveServer
 
-
 <style>
     .filter-sidebar {
         transition: transform 0.3s ease-in-out;
         z-index: 2500 !important;
     }
 
-    .filter-sidebar.closed {
-        transform: translateX(-100%);
-    }
+        .filter-sidebar.closed {
+            transform: translateX(-100%);
+        }
 
-    .filter-sidebar.open {
-        transform: translateX(0);
-    }
+        .filter-sidebar.open {
+            transform: translateX(0);
+        }
 
     .filter-overlay {
         background-color: rgba(0, 0, 0, 0.5);
         transition: opacity 0.3s ease-in-out;
         z-index: 2400 !important;
-        pointer-events: none !important; /* This is the key fix */
+        pointer-events: none !important;
     }
 
     .mud-grid.z-index-1500 {
@@ -54,7 +53,6 @@
     .circle-section {
         align-items: center;
     }
-
 </style>
 
 <PageTitle>Home</PageTitle>
@@ -66,61 +64,83 @@
             <MudText Typo="Typo.h6" Class="m-0">Filters</MudText>
             <MudIconButton Icon="@Icons.Material.Filled.Close" OnClick="ToggleFilters" Color="Color.Default" />
         </div>
-        
+
         <div class="flex-grow-1" style="overflow-y: auto;">
-            <!-- Category Filter -->
+            @* <!-- Category Filter -->
             <MudText Typo="Typo.subtitle1" Class="mb-3">Category</MudText>
             @foreach (var category in allProducts.Select(p => p.Category).Distinct().OrderBy(c => c))
             {
-                <MudCheckBox T="bool" 
-                           Checked="@(selectedCategories.Contains(category))"
-                           CheckedChanged="@((bool isChecked) => ToggleCategoryFilter(category, isChecked))"
-                           Label="@category"
-                           Class="mb-2" />
+                <MudCheckBox T="bool"
+                             @bind-Value="categoryStates[category]"
+                             Label="@category"
+                             Class="mb-2" />
             }
-            
+
             <MudDivider Class="my-4" />
 
             <!-- Stock Filter -->
             <MudText Typo="Typo.subtitle1" Class="mb-3">Stock Status</MudText>
-            <MudCheckBox T="bool" 
-                       Checked="@showInStockOnly"
-                       CheckedChanged="@(async (bool isChecked) => await ToggleInStockFilter(isChecked))"
-                       Label="In Stock Only"
-                       Class="mb-2" />
-            
-            <MudDivider Class="my-4" />
-            
+            <MudCheckBox T="bool"
+                         @bind-Value="showInStockOnly"
+                         Label="In Stock Only"
+                         Class="mb-2" />
+
+            <MudDivider Class="my-4" /> *@
+
             <!-- Color Filter -->
             <MudText Typo="Typo.subtitle1" Class="mb-3">Colors</MudText>
             <div class="d-flex flex-wrap gap-2">
                 @foreach (var color in allProducts.SelectMany(p => p.Colours).Distinct().OrderBy(c => c.ToString()))
                 {
                     <MudChip T="Colour"
-                           Value="@color"
-                           OnClick="@(() => ToggleColorFilter(color))"
-                           Variant="@(selectedColorsFilter.Contains(color) ? Variant.Filled : Variant.Outlined)"
-                           Class="color-chip p-0"
-                           Style="@GetChipStyle(color)">
+                             Value="@color"
+                             OnClick="@(() => OnColorFilterChanged(color))"
+                             Variant="@(selectedColorsFilter.Contains(color) ? Variant.Filled : Variant.Outlined)"
+                             Class="color-chip p-0"
+                             Style="@GetChipStyle(color)">
                         ㅤ
                     </MudChip>
                 }
             </div>
+
+            <MudDivider Class="my-4" />
+
+            <!-- Price Range Filter -->
+            <MudText Typo="Typo.subtitle1" Class="mb-3">Price Range</MudText>
+            <div class="px-2">
+                <MudText Typo="Typo.body2" Class="mb-2">Min: €@minPriceFilter</MudText>
+                <MudSlider T="decimal"
+                           Min="0"
+                           Max="@maxPrice"
+                           Step="1"
+                           Value="@minPriceFilter"
+                           ValueChanged="@(async (decimal value) => await OnMinPriceChanged(value))"
+                           Immediate="true" />
+
+                <MudText Typo="Typo.body2" Class="mb-2 mt-4">Max: €@maxPriceFilter</MudText>
+                <MudSlider T="decimal"
+                           Min="0"
+                           Max="@maxPrice"
+                           Step="1"
+                           Value="@maxPriceFilter"
+                           ValueChanged="@(async (decimal value) => await OnMaxPriceChanged(value))"
+                           Immediate="true" />
+            </div>
         </div>
-        
+
         <div class="mt-auto pt-3">
-            <MudButton Variant="Variant.Filled" 
-                     Color="Color.Secondary" 
-                     OnClick="@(() => ClearAllFilters())"
-                     FullWidth="true"
-                     Class="mb-2">
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Secondary"
+                       OnClick="ClearAllFilters"
+                       FullWidth="true"
+                       Class="mb-2">
                 Clear All Filters
             </MudButton>
-            <MudButton Variant="Variant.Filled" 
-                     Color="Color.Primary" 
-                     OnClick="@(() => ApplyFilters())"
-                     FullWidth="true">
-                Apply Filters
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       OnClick="CloseFilters"
+                       FullWidth="true">
+                Close Filters
             </MudButton>
         </div>
     </div>
@@ -139,21 +159,11 @@
             <MudItem xs="6">
                 <MudButton OnClick="ToggleFilters">Filters</MudButton>
             </MudItem>
-           @*  <MudItem xs="6">
-                <MudMenu EndIcon="@Icons.Material.Filled.ArrowDropDown" Label="Sort">
-                    <MudMenuItem Label="Name: A-Z" OnClick="@(() => SortProducts("name-asc"))" />
-                    <MudMenuItem Label="Name: Z-A" OnClick="@(() => SortProducts("name-desc"))" />
-                    <MudMenuItem Label="Price: Low to High" OnClick="@(() => SortProducts("price-asc"))" />
-                    <MudMenuItem Label="Price: High to Low" OnClick="@(() => SortProducts("price-desc"))" />
-                    <MudMenuItem Label="Stock: High to Low" OnClick="@(() => SortProducts("stock-desc"))" />
-                    <MudMenuItem Label="Stock: Low to High" OnClick="@(() => SortProducts("stock-asc"))" />
-                </MudMenu>
-            </MudItem> *@
         </MudGrid>
     </MudItem>
     <MudItem xs="10">
         <MudTextField Value="@searchTerm"
-                      ValueChanged="@(async (string value) => await HandleSearchChanged(value))"
+                      ValueChanged="@(async (string value) => await OnSearchChanged(value))"
                       T="string"
                       Placeholder="Search Products..."
                       Variant="Variant.Outlined"
@@ -165,98 +175,166 @@
     </MudItem>
     <MudItem xs="1" Class="d-flex align-center justify-end">
         <MudIconButton Icon="@Icons.Material.Filled.ShoppingCart"
-                    OnClick="NavigateToCart"
-                    Color="Color.Primary" />
+                       OnClick="NavigateToCart"
+                       Color="Color.Primary" />
         <MudText Typo="Typo.caption" Class="ml-2">@cartService.CurrentCart.TotalItems items</MudText>
     </MudItem>
 </MudGrid>
 
-<MudGrid Class="z-index-1500">
-    @foreach (var product in filteredProducts)
-    {
-        <MudItem xs="12" sm="6" md="4" lg="4" xl="4" xxl="3">
-            <MudCard>
-                <MudCardHeader Class="mud-theme-primary">
-                    <div class="d-flex align-center">
-                        <i class="@productIconService.GetProductIcon(product.Category, GetSelectedColor(product.ProductId))"
-                           style="@productIconService.GetColorStyle(GetSelectedColor(product.ProductId)) font-size: 24px; margin-right: 10px;"></i>
-                        <div>
-                            <MudText Typo="Typo.h6">@product.ProductName</MudText>
-                            <MudText Typo="Typo.caption" Color="Color.Secondary">@product.Category</MudText>
-                        </div>
-                    </div>
-                    <MudSpacer />
-                    <MudChip Color="Color.Tertiary" T="string" Style="color: #000">@string.Concat("€" + @product.Price)</MudChip>
-                </MudCardHeader>
-                <MudCardContent>
-                    <MudGrid>
-                        <MudItem xs="6">
-                            <MudButton Class="mb-2"
-                                       OnClick="@(() => ToggleColours(product.ProductId))"
-                                       EndIcon="@(GetColourExpandedState(product.ProductId) ? Icons.Material.Filled.KeyboardArrowUp : Icons.Material.Filled.KeyboardArrowDown)">
-                                Available Colors:
-                            </MudButton>
-                            <MudCollapse Expanded="@GetColourExpandedState(product.ProductId)">
-                                <div class="d-flex flex-wrap gap-2 circle-section align-center">
-                                    @foreach (var colour in product.Colours)
-                                    {
-                                        <MudChip T="Colour"
-                                                    Value="@colour"
-                                                    OnClick="@(() => SelectColor(product.ProductId, colour))"
-                                                    Variant="GetSelectedColor(product.ProductId) == colour ? Variant.Filled : Variant.Outlined"
-                                                    Class="@GetChipClass(product.ProductId, colour)"
-                                                    Style="@GetChipStyle(colour)">
-                                            <span>ㅤ</span>
-                                        </MudChip>
-                                    }
-                                </div>
-                            </MudCollapse>
-                        </MudItem>
+<!-- Active Filters Display -->
+@if (activeFilters.Any())
+{
+    <MudGrid Class="my-2 px-4">
+        <MudItem xs="12">
+            <div class="d-flex align-center flex-wrap gap-2">
+                <MudText Typo="Typo.body2" Class="mr-2">Active filters:</MudText>
+                @foreach (var filter in activeFilters)
+                {
+                    <MudChip T="string" Color="Color.Primary"
+                             Variant="Variant.Filled"
+                             OnClose="@(() => RemoveActiveFilter(filter))"
+                             CloseIcon="@Icons.Material.Filled.Clear">
+                        @filter.DisplayText
+                    </MudChip>
+                }
+                @if (activeFilters.Count > 1)
+                {
+                    <MudButton Variant="Variant.Text"
+                               Size="MudBlazor.Size.Small"
+                               OnClick="ClearAllActiveFilters"
+                               EndIcon="@Icons.Material.Filled.Clear"
+                               Class="ml-2">
+                        Clear All
+                    </MudButton>
+                }
+            </div>
+        </MudItem>
+    </MudGrid>
+}
 
-                        <MudItem xs="6">
-                            <MudButton Class="mb-2"
-                                       OnClick="@(() => ToggleSizes(product.ProductId))"
-                                       EndIcon="@(GetSizeExpandedState(product.ProductId) ? Icons.Material.Filled.KeyboardArrowUp : Icons.Material.Filled.KeyboardArrowDown)">
-                                Available Sizes:
-                            </MudButton>
-                            <MudCollapse Expanded="@GetSizeExpandedState(product.ProductId)">
-                                <div class="d-flex flex-wrap gap-2 circle-section">
-                                    @foreach (var size in product.Sizes)
-                                    {
-                                        <MudChip T="Thryft.Models.Size"
-                                                 Value="@size"
-                                                 OnClick="@(() => SelectSize(product.ProductId, size))"
-                                                 Color="GetSelectedSize(product.ProductId) == size ? Color.Primary : Color.Default"
-                                                 Variant="GetSelectedSize(product.ProductId) == size ? Variant.Filled : Variant.Outlined"
-                                                 Class="size-chip">
-                                            @size
-                                        </MudChip>
-                                    }
-                                </div>
-                            </MudCollapse>
-                        </MudItem>
-                    </MudGrid>
-                </MudCardContent>
-                <MudCardActions>
-                    <MudGrid>
-                        <MudItem xs="8" Class="text-right">
-                            <MudText Typo="Typo.caption" Color="@(product.Stock > 0 ? Color.Success : Color.Error)">
-                                @(product.Stock > 0 ? $"{product.Stock} left" : "Sold out")
-                            </MudText>
-                        </MudItem>
-                        <MudItem xs="4" Class="text-right">
-                            <MudSpacer />
-                            <MudButton Style="width: 100%"
-                                       Variant="Variant.Filled"
-                                       Color="Color.Primary"
-                                       Disabled="@(!CanAddToCart(product))"
-                                       OnClick="@(() => AddToCart(product))">
-                                Add to Cart
-                            </MudButton>
-                        </MudItem>
-                    </MudGrid>
-                </MudCardActions>
-            </MudCard>
+<!-- Sort Options -->
+@* <MudGrid Class="my-2 px-4">
+    <MudItem xs="12">
+        <div class="d-flex align-center gap-2">
+            <MudText Typo="Typo.body2">Sort by:</MudText>
+            <MudSelect T="string"
+                       Variant="Variant.Outlined"
+                       Value="@currentSort"
+                       ValueChanged="@(async (string value) => await OnSortChanged(value))"
+                       Size="Size.Small"
+                       Style="min-width: 200px;">
+                <MudSelectItem Value="@("name-asc")">Name (A-Z)</MudSelectItem>
+                <MudSelectItem Value="@("name-desc")">Name (Z-A)</MudSelectItem>
+                <MudSelectItem Value="@("price-asc")">Price (Low to High)</MudSelectItem>
+                <MudSelectItem Value="@("price-desc")">Price (High to Low)</MudSelectItem>
+                <MudSelectItem Value="@("stock-desc")">Stock (High to Low)</MudSelectItem>
+                <MudSelectItem Value="@("stock-asc")">Stock (Low to High)</MudSelectItem>
+            </MudSelect>
+        </div>
+    </MudItem>
+</MudGrid> *@
+
+<MudGrid Class="z-index-1500">
+    @if (filteredProducts.Any())
+    {
+        @foreach (var product in filteredProducts)
+        {
+            <MudItem xs="12" sm="6" md="4" lg="4" xl="4" xxl="3">
+                <MudCard>
+                    <MudCardHeader Class="mud-theme-primary">
+                        <div class="d-flex align-center">
+                            <i class="@productIconService.GetProductIcon(product.Category, GetSelectedColor(product.ProductId))"
+                               style="@productIconService.GetColorStyle(GetSelectedColor(product.ProductId)) font-size: 24px; margin-right: 10px;"></i>
+                            <div>
+                                <MudText Typo="Typo.h6">@product.ProductName</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@product.Category</MudText>
+                            </div>
+                        </div>
+                        <MudSpacer />
+                        <MudChip Color="Color.Tertiary" T="string" Style="color: #000">€@product.Price.ToString("F2")</MudChip>
+                    </MudCardHeader>
+                    <MudCardContent>
+                        <MudGrid>
+                            <MudItem xs="6">
+                                <MudButton Class="mb-2"
+                                           OnClick="@(() => ToggleColours(product.ProductId))"
+                                           EndIcon="@(GetColourExpandedState(product.ProductId) ? Icons.Material.Filled.KeyboardArrowUp : Icons.Material.Filled.KeyboardArrowDown)">
+                                    Available Colors:
+                                </MudButton>
+                                <MudCollapse Expanded="@GetColourExpandedState(product.ProductId)">
+                                    <div class="d-flex flex-wrap gap-2 circle-section align-center">
+                                        @foreach (var colour in product.Colours)
+                                        {
+                                            <MudChip T="Colour"
+                                                     Value="@colour"
+                                                     OnClick="@(() => SelectColor(product.ProductId, colour))"
+                                                     Variant="GetSelectedColor(product.ProductId) == colour ? Variant.Filled : Variant.Outlined"
+                                                     Class="@GetChipClass(product.ProductId, colour)"
+                                                     Style="@GetChipStyle(colour)">
+                                                <span>ㅤ</span>
+                                            </MudChip>
+                                        }
+                                    </div>
+                                </MudCollapse>
+                            </MudItem>
+
+                            <MudItem xs="6">
+                                <MudButton Class="mb-2"
+                                           OnClick="@(() => ToggleSizes(product.ProductId))"
+                                           EndIcon="@(GetSizeExpandedState(product.ProductId) ? Icons.Material.Filled.KeyboardArrowUp : Icons.Material.Filled.KeyboardArrowDown)">
+                                    Available Sizes:
+                                </MudButton>
+                                <MudCollapse Expanded="@GetSizeExpandedState(product.ProductId)">
+                                    <div class="d-flex flex-wrap gap-2 circle-section">
+                                        @foreach (var size in product.Sizes)
+                                        {
+                                            <MudChip T="Thryft.Models.Size"
+                                                     Value="@size"
+                                                     OnClick="@(() => SelectSize(product.ProductId, size))"
+                                                     Color="GetSelectedSize(product.ProductId) == size ? Color.Primary : Color.Default"
+                                                     Variant="GetSelectedSize(product.ProductId) == size ? Variant.Filled : Variant.Outlined"
+                                                     Class="size-chip">
+                                                @size
+                                            </MudChip>
+                                        }
+                                    </div>
+                                </MudCollapse>
+                            </MudItem>
+                        </MudGrid>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudGrid>
+                            <MudItem xs="8" Class="text-right">
+                                <MudText Typo="Typo.caption" Color="@(product.Stock > 0 ? Color.Success : Color.Error)">
+                                    @(product.Stock > 0 ? $"{product.Stock} left" : "Sold out")
+                                </MudText>
+                            </MudItem>
+                            <MudItem xs="4" Class="text-right">
+                                <MudSpacer />
+                                <MudButton Style="width: 100%"
+                                           Variant="Variant.Filled"
+                                           Color="Color.Primary"
+                                           Disabled="@(!CanAddToCart(product))"
+                                           OnClick="@(() => AddToCart(product))">
+                                    Add to Cart
+                                </MudButton>
+                            </MudItem>
+                        </MudGrid>
+                    </MudCardActions>
+                </MudCard>
+            </MudItem>
+        }
+    }
+    else
+    {
+        <MudItem xs="12" Class="text-center py-8">
+            <MudText Typo="Typo.h6" Color="Color.Secondary">No products found matching your filters</MudText>
+            <MudButton Variant="Variant.Outlined"
+                       Color="Color.Primary"
+                       OnClick="ClearAllFilters"
+                       Class="mt-4">
+                Clear All Filters
+            </MudButton>
         </MudItem>
     }
 </MudGrid>
@@ -266,6 +344,8 @@
     private List<Product> allProducts;
     private List<Product> filteredProducts;
     private string searchTerm = string.Empty;
+
+    private List<ActiveFilter> activeFilters = new List<ActiveFilter>();
 
     // Filter states
     private bool showFilters = false;
@@ -283,12 +363,14 @@
     private Dictionary<int, Colour?> selectedColors = new Dictionary<int, Colour?>();
     private Dictionary<int, Thryft.Models.Size?> selectedSizes = new Dictionary<int, Thryft.Models.Size?>();
 
+    private Dictionary<string, bool> categoryStates = new Dictionary<string, bool>();
+
     protected override async Task OnInitializedAsync()
     {
-        allProducts = await productService.GetProductsAsync();
-        filteredProducts = allProducts ?? new List<Product>();
+        allProducts = await productService.GetProductsAsync() ?? new List<Product>();
+        filteredProducts = new List<Product>(allProducts);
 
-        if (allProducts != null)
+        if (allProducts.Any())
         {
             foreach (var product in allProducts)
             {
@@ -296,22 +378,37 @@
                 sizeExpandedStates[product.ProductId] = true;
             }
 
-            maxPrice = allProducts.Any() ? allProducts.Max(p => p.Price) : 1000;
+            maxPrice = allProducts.Max(p => p.Price);
             maxPriceFilter = maxPrice;
-        }
-        else
-        {
-            allProducts = new List<Product>();
-            filteredProducts = new List<Product>();
+
+            // Initialize category states
+            foreach (var category in allProducts.Select(p => p.Category).Distinct())
+            {
+                categoryStates[category] = false;
+            }
         }
 
-        // Use a safe event subscription pattern
+        ApplyAllFilters();
         cartService.OnCartUpdated += OnCartUpdated;
     }
 
+    private bool GetCategoryBinding(string category)
+{
+    return selectedCategories.Contains(category);
+}
+
+private void SetCategoryBinding(string category, bool value)
+{
+    if (value)
+        selectedCategories.Add(category);
+    else
+        selectedCategories.Remove(category);
+
+    ApplyAllFilters();
+}
+
     private void OnCartUpdated()
     {
-        // Check if component is still rendered before calling StateHasChanged
         if (!_disposed)
         {
             InvokeAsync(StateHasChanged);
@@ -324,74 +421,135 @@
         StateHasChanged();
     }
 
-    private void ToggleCategoryFilter(string category, bool isChecked)
+    private void CloseFilters()
+    {
+        showFilters = false;
+        StateHasChanged();
+    }
+
+    private void OnCategoryFilterChanged(string category, bool isChecked)
     {
         if (isChecked)
             selectedCategories.Add(category);
         else
             selectedCategories.Remove(category);
-        StateHasChanged();
+
+        ApplyAllFilters();
     }
 
-    private void ToggleColorFilter(Colour color)
+    private void OnCategoryStateChanged(string category, bool value)
+    {
+        categoryStates[category] = value;
+
+        if (value)
+            selectedCategories.Add(category);
+        else
+            selectedCategories.Remove(category);
+
+        ApplyAllFilters();
+    }
+
+    private void OnColorFilterChanged(Colour color)
     {
         if (selectedColorsFilter.Contains(color))
             selectedColorsFilter.Remove(color);
         else
             selectedColorsFilter.Add(color);
-        StateHasChanged();
+
+        ApplyAllFilters();
     }
 
     private async Task OnMinPriceChanged(decimal value)
     {
         minPriceFilter = value;
-        await Task.CompletedTask;
+        if (minPriceFilter > maxPriceFilter)
+            maxPriceFilter = minPriceFilter;
+
+        ApplyAllFilters();
+        await InvokeAsync(StateHasChanged);
     }
 
     private async Task OnMaxPriceChanged(decimal value)
     {
         maxPriceFilter = value;
-        await Task.CompletedTask;
+        if (maxPriceFilter < minPriceFilter)
+            minPriceFilter = maxPriceFilter;
+
+        ApplyAllFilters();
+        await InvokeAsync(StateHasChanged);
     }
 
-    private async Task ToggleInStockFilter(bool isChecked)
+    private async Task OnStockFilterChanged(bool isChecked)
     {
         showInStockOnly = isChecked;
-        await Task.CompletedTask;
+        ApplyAllFilters();
+        await InvokeAsync(StateHasChanged);
     }
 
-    private string GetChipClass(int productId, Colour colour)
+    private async Task OnSearchChanged(string value)
     {
-        var baseClass = "color-chip p-0";
-        return GetSelectedColor(productId) == colour
-            ? $"{baseClass} selected-color"
-            : baseClass;
+        searchTerm = value;
+        ApplyAllFilters();
+        await InvokeAsync(StateHasChanged);
     }
 
-    private void ClearAllFilters()
-    {
-        selectedCategories.Clear();
-        selectedColorsFilter.Clear();
-        minPriceFilter = 0;
-        maxPriceFilter = maxPrice;
-        showInStockOnly = false;
-        StateHasChanged();
-    }
-
-    private void ApplyFilters()
-    {
-        FilterProducts();
-        showFilters = false;
-        StateHasChanged();
-    }
-
-    private void SortProducts(string sortOption)
+    private async Task OnSortChanged(string sortOption)
     {
         currentSort = sortOption;
-        
+        SortProducts();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void ApplyAllFilters()
+    {
+        var results = allProducts.AsEnumerable();
+
+        // Apply search filter - match ALL search terms
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            var searchTerms = searchTerm.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+            results = results.Where(product =>
+                searchTerms.All(term =>
+                    product.ProductName?.Contains(term, StringComparison.OrdinalIgnoreCase) == true ||
+                    product.Category?.Contains(term, StringComparison.OrdinalIgnoreCase) == true ||
+                    product.Colours?.Any(color => color.ToString().Contains(term, StringComparison.OrdinalIgnoreCase)) == true ||
+                    product.Sizes?.Any(size => size.ToString().Contains(term, StringComparison.OrdinalIgnoreCase)) == true
+                )
+            );
+        }
+
+        // Apply category filters
+        if (selectedCategories.Any())
+        {
+            results = results.Where(p => selectedCategories.Contains(p.Category));
+        }
+
+        // Apply color filters
+        if (selectedColorsFilter.Any())
+        {
+            results = results.Where(p => p.Colours.Any(c => selectedColorsFilter.Contains(c)));
+        }
+
+        // Apply price filter
+        results = results.Where(p => p.Price >= minPriceFilter && p.Price <= maxPriceFilter);
+
+        // Apply stock filter
+        if (showInStockOnly)
+        {
+            results = results.Where(p => p.Stock > 0);
+        }
+
+        filteredProducts = results.ToList();
+        SortProducts();
+        UpdateActiveFilters();
+    }
+
+    private void SortProducts()
+    {
         var query = filteredProducts.AsEnumerable();
 
-        switch (sortOption)
+        switch (currentSort)
         {
             case "name-asc":
                 query = query.OrderBy(p => p.ProductName);
@@ -411,153 +569,158 @@
             case "stock-asc":
                 query = query.OrderBy(p => p.Stock);
                 break;
+            default:
+                query = query.OrderBy(p => p.ProductName);
+                break;
         }
 
         filteredProducts = query.ToList();
+    }
+
+    private void ClearAllFilters()
+    {
+        selectedCategories.Clear();
+        selectedColorsFilter.Clear();
+        minPriceFilter = 0;
+        maxPriceFilter = maxPrice;
+        showInStockOnly = false;
+        searchTerm = string.Empty;
+        currentSort = "name-asc";
+
+        // Reset category states
+        foreach (var category in categoryStates.Keys.ToList())
+        {
+            categoryStates[category] = false;
+        }
+
+        ApplyAllFilters();
         StateHasChanged();
     }
 
-    private bool CanAddToCart(Product product)
+    private void UpdateActiveFilters()
     {
-        return product.Stock > 0;
+        activeFilters.Clear();
+
+        // Search filter
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            activeFilters.Add(new ActiveFilter("search", searchTerm, $"Search: \"{searchTerm}\"", searchTerm));
+        }
+
+        // Category filters
+        foreach (var category in selectedCategories)
+        {
+            activeFilters.Add(new ActiveFilter("category", category, $"Category: {category}", category));
+        }
+
+        // Color filters
+        foreach (var color in selectedColorsFilter)
+        {
+            activeFilters.Add(new ActiveFilter("color", color.ToString(), $"Color: {color}", color));
+        }
+
+        // Price range filter
+        if (minPriceFilter > 0 || maxPriceFilter < maxPrice)
+        {
+            activeFilters.Add(new ActiveFilter("price", $"{minPriceFilter}-{maxPriceFilter}",
+                $"Price: €{minPriceFilter:F2} - €{maxPriceFilter:F2}"));
+        }
+
+        // Stock filter
+        if (showInStockOnly)
+        {
+            activeFilters.Add(new ActiveFilter("stock", "instock", "In Stock Only", true));
+        }
     }
 
-    private void NavigateToCart()
+    private void RemoveActiveFilter(ActiveFilter filter)
     {
-        Console.WriteLine("Navigating to cart");
-        Navigation.NavigateTo("/cart");
+        switch (filter.Type)
+        {
+            case "category":
+                selectedCategories.Remove(filter.Value);
+                break;
+            case "color":
+                var colorToRemove = (Colour)filter.OriginalValue!;
+                selectedColorsFilter.Remove(colorToRemove);
+                break;
+            case "price":
+                minPriceFilter = 0;
+                maxPriceFilter = maxPrice;
+                break;
+            case "stock":
+                showInStockOnly = false;
+                break;
+            case "search":
+                searchTerm = string.Empty;
+                break;
+        }
+
+        ApplyAllFilters();
+        StateHasChanged();
     }
+
+    private void ClearAllActiveFilters()
+    {
+        ClearAllFilters();
+    }
+
+    // Rest of your existing methods remain the same...
+    private bool CanAddToCart(Product product) => product.Stock > 0;
+
+    private void NavigateToCart() => Navigation.NavigateTo("/cart");
 
     private void AddToCart(Product product)
     {
         var selectedColor = GetSelectedColor(product.ProductId);
         var selectedSize = GetSelectedSize(product.ProductId);
 
-        Console.WriteLine($"=== ADD TO CART CLICKED ===");
-        Console.WriteLine($"Product: {product.ProductName}");
-        Console.WriteLine($"Product ID: {product.ProductId}");
-        Console.WriteLine($"Stock: {product.Stock}");
-
         cartService.AddToCart(product, selectedColor, selectedSize);
-
         StateHasChanged();
     }
 
     private void ToggleColours(int productId)
     {
         if (colourExpandedStates.ContainsKey(productId))
-        {
             colourExpandedStates[productId] = !colourExpandedStates[productId];
-        }
-        else
-        {
-            colourExpandedStates[productId] = false;
-        }
         StateHasChanged();
     }
 
     private void ToggleSizes(int productId)
     {
         if (sizeExpandedStates.ContainsKey(productId))
-        {
             sizeExpandedStates[productId] = !sizeExpandedStates[productId];
-        }
-        else
-        {
-            sizeExpandedStates[productId] = false;
-        }
         StateHasChanged();
     }
 
-    private bool GetColourExpandedState(int productId)
-    {
-        return colourExpandedStates.ContainsKey(productId) ? colourExpandedStates[productId] : true;
-    }
+    private bool GetColourExpandedState(int productId) =>
+        colourExpandedStates.ContainsKey(productId) ? colourExpandedStates[productId] : true;
 
-    private bool GetSizeExpandedState(int productId)
-    {
-        return sizeExpandedStates.ContainsKey(productId) ? sizeExpandedStates[productId] : true;
-    }
+    private bool GetSizeExpandedState(int productId) =>
+        sizeExpandedStates.ContainsKey(productId) ? sizeExpandedStates[productId] : true;
 
-    private Colour? GetSelectedColor(int productId)
-    {
-        return selectedColors.ContainsKey(productId) ? selectedColors[productId] : null;
-    }
+    private Colour? GetSelectedColor(int productId) =>
+        selectedColors.ContainsKey(productId) ? selectedColors[productId] : null;
 
-    private Thryft.Models.Size? GetSelectedSize(int productId)
-    {
-        return selectedSizes.ContainsKey(productId) ? selectedSizes[productId] : null;
-    }
+    private Thryft.Models.Size? GetSelectedSize(int productId) =>
+        selectedSizes.ContainsKey(productId) ? selectedSizes[productId] : null;
 
     private void SelectColor(int productId, Colour colour)
     {
-        selectedColors[productId] = GetSelectedColor(productId) != colour ? colour : null;
+        selectedColors[productId] = GetSelectedColor(productId) == colour ? null : colour;
         StateHasChanged();
     }
 
     private void SelectSize(int productId, Thryft.Models.Size size)
     {
-        selectedSizes[productId] = GetSelectedSize(productId) != size ? size : null;
+        selectedSizes[productId] = GetSelectedSize(productId) == size ? null : size;
         StateHasChanged();
     }
 
-    private async Task HandleSearchChanged(string value)
+    private string GetChipClass(int productId, Colour colour)
     {
-        searchTerm = value;
-        FilterProducts();
-        await Task.CompletedTask;
-    }
-
-    private void FilterProducts()
-    {
-        IEnumerable<Product> currentResults = allProducts;
-
-        // Apply search term filter
-        if (!string.IsNullOrWhiteSpace(searchTerm))
-        {
-            var searchTerms = searchTerm.Split(' ', StringSplitOptions.RemoveEmptyEntries)
-                                      .Select(term => term.Trim().ToLowerInvariant())
-                                      .ToArray();
-
-            foreach (var term in searchTerms)
-            {
-                currentResults = currentResults.Where(product =>
-                {
-                    var nameMatches = product.ProductName?.Contains(term, StringComparison.OrdinalIgnoreCase) == true;
-                    var categoryMatches = product.Category?.Contains(term, StringComparison.OrdinalIgnoreCase) == true;
-                    var colorMatches = product.Colours?.Any(color =>
-                        color.ToString().Contains(term, StringComparison.OrdinalIgnoreCase)) == true;
-
-                    return nameMatches || categoryMatches || colorMatches;
-                });
-            }
-        }
-
-        // Apply category filters
-        if (selectedCategories.Any())
-        {
-            currentResults = currentResults.Where(p => selectedCategories.Contains(p.Category));
-        }
-
-        // Apply price range filter
-        currentResults = currentResults.Where(p => p.Price >= minPriceFilter && p.Price <= maxPriceFilter);
-
-        // Apply stock filter
-        if (showInStockOnly)
-        {
-            currentResults = currentResults.Where(p => p.Stock > 0);
-        }
-
-        // Apply color filters
-        if (selectedColorsFilter.Any())
-        {
-            currentResults = currentResults.Where(p => p.Colours.Any(c => selectedColorsFilter.Contains(c)));
-        }
-
-        filteredProducts = currentResults.ToList();
-        
-        // Apply current sort
-        SortProducts(currentSort);
+        var baseClass = "color-chip p-0";
+        return GetSelectedColor(productId) == colour ? $"{baseClass} selected-color" : baseClass;
     }
 
     private string GetChipStyle(Colour colour)
@@ -565,46 +728,37 @@
         return $"min-width: 33px !important; background-color: {GetColorHex(colour)}; color: {GetTextColor(colour)}; border: 2px solid {GetBorderColor(colour)}; min-width: 60px;";
     }
 
-    private string GetColorHex(Colour colour)
+    private string GetColorHex(Colour colour) => colour switch
     {
-        return colour switch
-        {
-            Colour.Red => "#f44336",
-            Colour.Blue => "#2196f3",
-            Colour.Green => "#4caf50",
-            Colour.Black => "#000000",
-            Colour.White => "#ffffff",
-            Colour.Yellow => "#ffeb3b",
-            Colour.Pink => "#e91e63",
-            Colour.Purple => "#9c27b0",
-            Colour.Orange => "#ff9800",
-            Colour.Grey => "#9e9e9e",
-            Colour.Brown => "#795548",
-            Colour.Navy => "#001f3f",
-            Colour.Teal => "#39cccc",
-            Colour.Maroon => "#85144b",
-            Colour.Beige => "#f5f5dc",
-            _ => "#ffffff"
-        };
-    }
+        Colour.Red => "#f44336",
+        Colour.Blue => "#2196f3",
+        Colour.Green => "#4caf50",
+        Colour.Black => "#000000",
+        Colour.White => "#ffffff",
+        Colour.Yellow => "#ffeb3b",
+        Colour.Pink => "#e91e63",
+        Colour.Purple => "#9c27b0",
+        Colour.Orange => "#ff9800",
+        Colour.Grey => "#9e9e9e",
+        Colour.Brown => "#795548",
+        Colour.Navy => "#001f3f",
+        Colour.Teal => "#39cccc",
+        Colour.Maroon => "#85144b",
+        Colour.Beige => "#f5f5dc",
+        _ => "#ffffff"
+    };
 
-    private string GetTextColor(Colour colour)
+    private string GetTextColor(Colour colour) => colour switch
     {
-        return colour switch
-        {
-            Colour.Black or Colour.Navy or Colour.Maroon or Colour.Brown or Colour.Purple => "#ffffff",
-            _ => "#000000"
-        };
-    }
+        Colour.Black or Colour.Navy or Colour.Maroon or Colour.Brown or Colour.Purple => "#ffffff",
+        _ => "#000000"
+    };
 
-    private string GetBorderColor(Colour colour)
+    private string GetBorderColor(Colour colour) => colour switch
     {
-        return colour switch
-        {
-            Colour.White or Colour.Beige or Colour.Yellow => "#ccc",
-            _ => "transparent"
-        };
-    }
+        Colour.White or Colour.Beige or Colour.Yellow => "#ccc",
+        _ => "transparent"
+    };
 
     private bool _disposed = false;
 

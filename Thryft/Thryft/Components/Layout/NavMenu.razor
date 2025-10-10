@@ -2,6 +2,8 @@
 @inject CartService cartService
 @inject NavigationManager Navigation
 
+@rendermode InteractiveServer
+
 <MudAppBar Class="py-1">
     @* <MudIconButton Color="Color.Tertiary" Icon="@Icons.Material.Filled.Menu" Href="">Filter</MudIconButton> *@
     <MudSpacer />
@@ -13,7 +15,7 @@
                        Color="Color.Tertiary" />
     </MudBadge>
     <MudMenu Color="Color.Tertiary" Class="ms-4" Icon="@Icons.Material.Filled.Person">
-        <MudMenuItem></MudMenuItem>
+        <MudMenuItem OnClick="NavigateToOrders">Orders</MudMenuItem>
         <MudMenuItem></MudMenuItem>
         <MudMenuItem></MudMenuItem>
     </MudMenu>
@@ -29,6 +31,11 @@
     private void NavigateToCart()
     {
         Navigation.NavigateTo("/cart");
+    }
+
+    private void NavigateToOrders()
+    {
+        Navigation.NavigateTo("/home");
     }
 
     public void Dispose()

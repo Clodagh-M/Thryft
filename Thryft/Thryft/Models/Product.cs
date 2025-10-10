@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Thryft.Models;
 
@@ -21,4 +22,13 @@ public class Product
 
     public ICollection<OrderItem> OrderItems { get; set; }
 }
+
+//INSERT into Products(ProductName, Stock, Price, Category, Colours, Sizes)
+//VALUES('Floral Dress', 20, 24.99, 'Dress', 'Red, Blue, Pink, Purple, Black, White', 'XS, S, M, L, XL, XXL');
+
+//    INSERT into Products(ProductName, Stock, Price, Category, Colours, Sizes)
+//VALUES('Striped Socks', 55, 9.99, 'Socks', 'White, Black, Brown, Navy', 'S, M, L');
+
+//    INSERT into Products(ProductName, Stock, Price, Category, Colours, Sizes)
+//VALUES('Baseball Cap', 20, 19.99, 'Hat', 'Black, Green, Yellow, Blue, White', 'OneSize');
 

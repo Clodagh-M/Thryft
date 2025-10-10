@@ -1,4 +1,7 @@
 ﻿@inherits LayoutComponentBase
+@using Thryft.Services
+@inject CartService cartService
+@inject NavigationManager Navigation
 
 
 <MudThemeProvider Theme="ThryftTheme" />
@@ -7,7 +10,46 @@
 <MudSnackbarProvider />
 
 <div class="page">
-    <NavMenu />
+    <MudAppBar Class="py-1">
+        @* <MudIconButton Color="Color.Tertiary" Icon="@Icons.Material.Filled.Menu" Href="">Filter</MudIconButton> *@
+        <MudSpacer />
+        <MudText>thryft</MudText>
+        <MudSpacer />
+        <MudBadge Color="Color.Dark" Content="@cartService.CurrentCart.TotalItems" Max="99">
+            <MudIconButton Icon="@Icons.Material.Filled.ShoppingCart"
+                           OnClick="NavigateToCart"
+                           Color="Color.Tertiary" />
+        </MudBadge>
+        <MudMenu Color="Color.Tertiary" Class="ms-4" Icon="@Icons.Material.Filled.Person">
+            <MudMenuItem OnClick="NavigateToOrders">Orders</MudMenuItem>
+            <MudMenuItem></MudMenuItem>
+            <MudMenuItem></MudMenuItem>
+        </MudMenu>
+    </MudAppBar>
+
+    @code {
+        protected override void OnInitialized()
+        {
+            // Subscribe to cart updates so the badge updates in real-time
+            cartService.OnCartUpdated += StateHasChanged;
+        }
+
+        private void NavigateToCart()
+        {
+            Navigation.NavigateTo("/cart");
+        }
+
+        private void NavigateToOrders()
+        {
+            Navigation.NavigateTo("/home");
+        }
+
+        public void Dispose()
+        {
+            // Important: Unsubscribe to prevent memory leaks
+            cartService.OnCartUpdated -= StateHasChanged;
+        }
+    }
 
     <main>
         <div class="top-row px-4"></div>
