@@ -37,7 +37,7 @@ public class AppDbContext : DbContext
             // Relationship with User
             entity.HasOne(e => e.User)
                   .WithMany()
-                  .HasForeignKey(e => e.UserID)
+                  .HasForeignKey(e => e.UserId)
                   .OnDelete(DeleteBehavior.Restrict);
         });
 
