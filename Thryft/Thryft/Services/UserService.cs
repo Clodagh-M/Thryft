@@ -61,11 +61,12 @@ public class UserService
         await context.SaveChangesAsync();
     }
 
+    // to get the current user logged in
     public async Task<User?> GetCurrentUserAsync(ClaimsPrincipal principal)
     {
         if (principal?.Identity?.IsAuthenticated != true)
             return null;
-
+        
         var email = principal.FindFirst(ClaimTypes.Email)?.Value
                     ?? principal.Identity?.Name;
 
