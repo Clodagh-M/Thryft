@@ -1,0 +1,459 @@
+﻿@page "/checkout"
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@using Thryft.Models
+@using Thryft.Services
+
+@inject CartService cartService
+@inject InventoryService inventoryService
+@inject NavigationManager Navigation
+@inject ILogger<Checkout> Logger
+
+@rendermode InteractiveServer
+
+<PageTitle>Thryft - Checkout</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="my-4">
+    @if (!_orderCompleted)
+    {
+        <MudText Typo="Typo.h4" Class="mb-4">Checkout</MudText>
+
+        <!-- Order Summary -->
+        <MudCard Class="mb-4">
+            <MudCardContent>
+                <MudText Typo="Typo.h6" Class="mb-3">Order Summary</MudText>
+
+                @foreach (var item in cartService.CurrentCart.Items)
+                {
+                    <div class="d-flex justify-space-between mb-2">
+                        <MudText Typo="Typo.body2">
+                            @item.ProductName (@item.SelectedColor)(@item.SelectedSize) x @item.Quantity
+                        </MudText>
+                        <MudText Typo="Typo.body2">€@item.TotalPrice</MudText>
+                    </div>
+                }
+
+                <MudDivider Class="my-2" />
+
+                <div class="d-flex justify-space-between mb-1">
+                    <MudText Typo="Typo.body1">Subtotal:</MudText>
+                    <MudText Typo="Typo.body1">€@cartService.CurrentCart.TotalPrice</MudText>
+                </div>
+
+                <div class="d-flex justify-space-between mb-1">
+                    <MudText Typo="Typo.body1">Shipping:</MudText>
+                    <MudText Typo="Typo.body1">€5.00</MudText>
+                </div>
+
+                <div class="d-flex justify-space-between">
+                    <MudText Typo="Typo.h6">Total:</MudText>
+                    <MudText Typo="Typo.h6">€@_totalAmount</MudText>
+                </div>
+            </MudCardContent>
+        </MudCard>
+
+        <!-- Simple Checkout Form -->
+        <MudCard>
+            <MudCardContent>
+                <MudText Typo="Typo.h6" Class="mb-3">Shipping Information</MudText>
+
+                <MudTextField @bind-Value="_shippingInfo.Name"
+                              Label="Full Name"
+                              Variant="Variant.Outlined"
+                              Class="mb-3"
+                              Required="true" />
+
+                <MudTextField @bind-Value="_shippingInfo.Address"
+                              Label="Address"
+                              Variant="Variant.Outlined"
+                              Class="mb-3"
+                              Required="true" />
+
+                <MudTextField @bind-Value="_shippingInfo.City"
+                              Label="City"
+                              Variant="Variant.Outlined"
+                              Class="mb-3"
+                              Required="true" />
+
+                <MudTextField @bind-Value="_shippingInfo.ZipCode"
+                              Label="Zip Code"
+                              Variant="Variant.Outlined"
+                              Class="mb-3"
+                              Required="true" />
+
+                <MudText Typo="Typo.h6" Class="mb-3 mt-4">Payment Information</MudText>
+
+                <MudTextField @bind-Value="_paymentInfo.CardNumber"
+                              Label="Card Number"
+                              Variant="Variant.Outlined"
+                              Class="mb-3"
+                              Required="true"/>
+
+                <div class="d-flex gap-3">
+                    <MudTextField @bind-Value="_paymentInfo.ExpiryDate"
+                                  Label="Expiry Date (MM/YY)"
+                                  Variant="Variant.Outlined"
+                                  T="string"
+                                  Class="flex-grow-1"
+                                  Required="true"/>
+
+                    <MudTextField @bind-Value="_paymentInfo.CVV"
+                                  Label="CVV"
+                                  Variant="Variant.Outlined"
+                                  Required="true"/>
+                </div>
+
+                @if (_errorMessage != null)
+                {
+                    <MudAlert Severity="Severity.Error" Class="mt-3">
+                        @_errorMessage
+                    </MudAlert>
+                }
+
+                <div class="d-flex gap-3 mt-4">
+                    <MudButton Variant="Variant.Text"
+                               Color="Color.Primary"
+                               OnClick="ReturnToCart"
+                               FullWidth="true">
+                        Back to Cart
+                    </MudButton>
+
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               OnClick="ProcessOrder"
+                               FullWidth="true"
+                               Disabled="_isProcessing">
+                        @(_isProcessing ? "Processing..." : $"Pay €{_totalAmount}")
+                    </MudButton>
+                </div>
+            </MudCardContent>
+        </MudCard>
+    }
+    else
+    {
+        <!-- Order Confirmation -->
+        <div class="text-center py-8">
+            <MudIcon Icon="@Icons.Material.Filled.CheckCircle"
+                     Size="MudBlazor.Size.Large"
+                     Color="Color.Success"
+                     Class="mb-3" />
+            <MudText Typo="Typo.h4" Class="mb-3">Order Confirmed!</MudText>
+            <MudText Typo="Typo.body1" Color="Color.Secondary" Class="mb-2">
+                Thank you for your purchase, @_shippingInfo.Name!
+            </MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+                Your order has been processed successfully. Order ID: #@_orderId
+            </MudText>
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       OnClick="ReturnToHome"
+                       StartIcon="@Icons.Material.Filled.Home">
+                Return to Home
+            </MudButton>
+        </div>
+    }
+</MudContainer>
+
+@code {
+    private decimal _totalAmount;
+    private bool _isProcessing = false;
+    private bool _orderCompleted = false;
+    private string? _errorMessage;
+    private string _orderId = Guid.NewGuid().ToString()[..8].ToUpper();
+
+    private int _currentUserId = 1;
+
+    private ShippingInfo _shippingInfo = new();
+    private PaymentInfo _paymentInfo = new();
+
+    [Inject] private OrderService? OrderService { get; set; }
+    [Inject] private AuthenticationStateProvider? AuthenticationStateProvider { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Add a small delay to ensure the cart service is properly initialized
+        // if (!cartService.CurrentCart.Items.Any())
+        // {
+        //     Navigation.NavigateTo("/cart");
+        //     return;
+        // }
+
+        _totalAmount = cartService.CurrentCart.TotalPrice + 5.00m;
+
+        // Get current user ID
+        // await GetCurrentUserId();
+    }
+
+    private async Task GetCurrentUserId()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity.IsAuthenticated)
+        {
+            // Get user ID from claims - adjust this based on your authentication setup
+            var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                           ?? user.FindFirst("sub")?.Value;
+
+            if (int.TryParse(userIdClaim, out int userId))
+            {
+                _currentUserId = userId;
+            }
+        }
+    }
+
+    private async Task ProcessOrder()
+    {
+        if (!ValidateForm())
+        {
+            return;
+        }
+
+        _isProcessing = true;
+        _errorMessage = null;
+        StateHasChanged();
+
+        // Track which items we've successfully reduced inventory for
+        var reducedItems = new List<(int ProductId, Colour? Color, Thryft.Models.Size? Size, int Quantity)>();
+
+        try
+        {
+            // Simulate processing delay
+            await Task.Delay(2000);
+
+            // Reduce inventory quantities
+            foreach (var item in cartService.CurrentCart.Items)
+            {
+                var success = await inventoryService.ReduceInventory(
+                    item.ProductId,
+                    item.SelectedColor,
+                    item.SelectedSize,
+                    item.Quantity);
+
+                if (success)
+                {
+                    reducedItems.Add((item.ProductId, item.SelectedColor, item.SelectedSize, item.Quantity));
+                }
+                else
+                {
+                    // If any item fails, restore inventory for previously reduced items
+                    await RestoreReducedInventory(reducedItems);
+
+                    _errorMessage = $"Item '{item.ProductName}' is no longer available in the requested quantity. Please review your cart.";
+                    _isProcessing = false;
+                    StateHasChanged();
+                    return;
+                }
+            }
+
+            // Simulate payment processing
+            var paymentSuccessful = await ProcessPayment();
+
+            if (!paymentSuccessful)
+            {
+                // If payment fails, restore all inventory
+                await RestoreReducedInventory(reducedItems);
+
+                _errorMessage = "Payment processing failed. Please check your payment information and try again.";
+                _isProcessing = false;
+                StateHasChanged();
+                return;
+            }
+
+            // Create and save order to database
+            var orderSuccess = await CreateOrderInDatabase();
+
+            if (!orderSuccess)
+            {
+                // If order creation fails, restore all inventory
+                await RestoreReducedInventory(reducedItems);
+
+                _errorMessage = "Failed to create order. Please try again.";
+                _isProcessing = false;
+                StateHasChanged();
+                return;
+            }
+
+            // Clear cart and show success
+            cartService.ClearCart();
+            _orderCompleted = true;
+
+            Logger.LogInformation("Order {OrderId} completed successfully for {CustomerName}",
+                _orderId, _shippingInfo.Name);
+        }
+        catch (Exception ex)
+        {
+            // If any exception occurs, restore all inventory
+            await RestoreReducedInventory(reducedItems);
+
+            _errorMessage = "An error occurred while processing your order. Please try again.";
+            Logger.LogError(ex, "Error processing order");
+        }
+        finally
+        {
+            _isProcessing = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task<bool> CreateOrderInDatabase()
+    {
+        if (OrderService == null)
+        {
+            Logger.LogError("OrderService is null - check if it's registered in DI container");
+            return false;
+        }
+
+        try
+        {
+            var order = new Order
+            {
+                UserId = _currentUserId,
+                Total = _totalAmount,
+                Created = DateTime.UtcNow,
+                Status = "Completed",
+                OrderItems = cartService.CurrentCart.Items.Select(item => new OrderItem
+                {
+                    ProductId = item.ProductId,
+                    Quantity = item.Quantity,
+                    UnitPrice = item.Price,
+                    SelectedColour = item.SelectedColor,
+                    SelectedSize = item.SelectedSize
+                }).ToList()
+            };
+
+            Logger.LogInformation("Attempting to create order for user {UserId} with {ItemCount} items",
+                _currentUserId, order.OrderItems.Count);
+
+            var createdOrder = await OrderService.CreateOrderAsync(order);
+
+            if (createdOrder == null)
+            {
+                Logger.LogError("OrderService.CreateOrderAsync returned null");
+                return false;
+            }
+
+            _orderId = createdOrder.OrderId.ToString();
+            Logger.LogInformation("Order created successfully with ID: {OrderId}", _orderId);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error creating order in database. UserId: {UserId}, Total: {Total}",
+                _currentUserId, _totalAmount);
+            return false;
+        }
+    }
+
+    private async Task RestoreReducedInventory(List<(int ProductId, Colour? Color, Thryft.Models.Size? Size, int Quantity)> reducedItems)
+    {
+        foreach (var item in reducedItems)
+        {
+            await inventoryService.RestoreInventory(
+                item.ProductId,
+                item.Color,
+                item.Size,
+                item.Quantity);
+        }
+    }
+
+    private bool ValidateForm()
+    {
+        if (string.IsNullOrWhiteSpace(_shippingInfo.Name) ||
+            string.IsNullOrWhiteSpace(_shippingInfo.Address) ||
+            string.IsNullOrWhiteSpace(_shippingInfo.City) ||
+            string.IsNullOrWhiteSpace(_shippingInfo.ZipCode) ||
+            string.IsNullOrWhiteSpace(_paymentInfo.CardNumber) ||
+            string.IsNullOrWhiteSpace(_paymentInfo.ExpiryDate) ||
+            string.IsNullOrWhiteSpace(_paymentInfo.CVV))
+        {
+            _errorMessage = "Please fill in all required fields.";
+            return false;
+        }
+
+        // Simple card number validation (just checking length)
+        var cleanCardNumber = _paymentInfo.CardNumber.Replace(" ", "");
+        if (cleanCardNumber.Length != 16 || !cleanCardNumber.All(char.IsDigit))
+        {
+            _errorMessage = "Please enter a valid 16-digit card number.";
+            return false;
+        }
+
+        // Simple expiry date validation
+        if (!System.Text.RegularExpressions.Regex.IsMatch(_paymentInfo.ExpiryDate, @"^\d{2}/\d{2}$"))
+        {
+            _errorMessage = "Please enter a valid expiry date (MM/YY).";
+            return false;
+        }
+
+        // Simple CVV validation
+        if (_paymentInfo.CVV.Length != 3 || !_paymentInfo.CVV.All(char.IsDigit))
+        {
+            _errorMessage = "Please enter a valid 3-digit CVV.";
+            return false;
+        }
+
+        _errorMessage = null;
+        return true;
+    }
+
+    private async Task<bool> ReduceInventoryQuantities()
+    {
+        try
+        {
+            foreach (var item in cartService.CurrentCart.Items)
+            {
+                var success = await inventoryService.ReduceInventory(
+                    item.ProductId,
+                    item.SelectedColor,
+                    item.SelectedSize,
+                    item.Quantity);
+
+                if (!success)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error reducing inventory quantities");
+            return false;
+        }
+    }
+
+    private async Task<bool> ProcessPayment()
+    {
+        // Simulate payment processing with 90% success rate
+        await Task.Delay(1000);
+        var random = new Random();
+        return random.NextDouble() < 1; // 90% success rate
+    }
+
+    private void ReturnToCart()
+    {
+        Navigation.NavigateTo("/cart");
+    }
+
+    private void ReturnToHome()
+    {
+        Navigation.NavigateTo("/home");
+    }
+
+    // Model classes
+    private class ShippingInfo
+    {
+        public string Name { get; set; } = "";
+        public string Address { get; set; } = "";
+        public string City { get; set; } = "";
+        public string ZipCode { get; set; } = "";
+    }
+
+    private class PaymentInfo
+    {
+        public string CardNumber { get; set; } = "";
+        public string ExpiryDate { get; set; } = "";
+        public string CVV { get; set; } = "";
+    }
+}

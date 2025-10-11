@@ -54,21 +54,29 @@ namespace Thryft.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("Created")
-                        .HasColumnType("TEXT");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("GETDATE()");
 
                     b.Property<string>("Status")
                         .IsRequired()
+                        .HasMaxLength(50)
                         .HasColumnType("TEXT");
 
                     b.Property<decimal>("Total")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("decimal(18,2)");
 
-                    b.Property<int>("UserID")
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("UserId1")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("OrderId");
 
-                    b.HasIndex("UserID");
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("UserId1");
 
                     b.ToTable("Orders");
                 });
@@ -81,18 +89,26 @@ namespace Thryft.Migrations
                     b.Property<int>("ProductId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int?>("ProductId1")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("Quantity")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("SelectedColour")
+                    b.Property<int?>("SelectedColour")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("SelectedSize")
+                    b.Property<int?>("SelectedSize")
                         .HasColumnType("INTEGER");
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasColumnType("TEXT");
 
                     b.HasKey("OrderId", "ProductId");
 
                     b.HasIndex("ProductId");
+
+                    b.HasIndex("ProductId1");
 
                     b.ToTable("OrderItems");
                 });
@@ -156,10 +172,14 @@ namespace Thryft.Migrations
             modelBuilder.Entity("Thryft.Models.Order", b =>
                 {
                     b.HasOne("Thryft.Models.User", "User")
-                        .WithMany("Orders")
-                        .HasForeignKey("UserID")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("Thryft.Models.User", null)
+                        .WithMany("Orders")
+                        .HasForeignKey("UserId1");
 
                     b.Navigation("User");
                 });
@@ -173,10 +193,14 @@ namespace Thryft.Migrations
                         .IsRequired();
 
                     b.HasOne("Thryft.Models.Product", "Product")
-                        .WithMany("OrderItems")
+                        .WithMany()
                         .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("Thryft.Models.Product", null)
+                        .WithMany("OrderItems")
+                        .HasForeignKey("ProductId1");
 
                     b.Navigation("Order");
 

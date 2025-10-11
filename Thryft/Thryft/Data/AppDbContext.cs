@@ -27,23 +27,35 @@ public class AppDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // Configure relationships
-        modelBuilder.Entity<Order>()
-            .HasOne(o => o.User)
-            .WithMany(u => u.Orders)
-            .HasForeignKey(o => o.UserID);
+        modelBuilder.Entity<Order>(entity =>
+        {
+            entity.HasKey(e => e.OrderId);
+            entity.Property(e => e.Total).HasColumnType("decimal(18,2)");
+            entity.Property(e => e.Created).HasDefaultValueSql("GETDATE()");
+            entity.Property(e => e.Status).HasMaxLength(50);
 
-        modelBuilder.Entity<OrderItem>()
-            .HasKey(oi => new { oi.OrderId, oi.ProductId });
+            // Relationship with User
+            entity.HasOne(e => e.User)
+                  .WithMany()
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
 
-        modelBuilder.Entity<OrderItem>()
-            .HasOne(oi => oi.Order)
-            .WithMany(o => o.OrderItems)
-            .HasForeignKey(oi => oi.OrderId);
+        // Configure OrderItem entity (composite key)
+        modelBuilder.Entity<OrderItem>(entity =>
+        {
+            entity.HasKey(e => new { e.OrderId, e.ProductId });
 
-        modelBuilder.Entity<OrderItem>()
-            .HasOne(oi => oi.Product)
-            .WithMany(p => p.OrderItems)
-            .HasForeignKey(oi => oi.ProductId);
+            // Relationships
+            entity.HasOne(e => e.Order)
+                  .WithMany(e => e.OrderItems)
+                  .HasForeignKey(e => e.OrderId);
+
+            entity.HasOne(e => e.Product)
+                  .WithMany()
+                  .HasForeignKey(e => e.ProductId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
 
         modelBuilder.Entity<Product>(entity =>
         {

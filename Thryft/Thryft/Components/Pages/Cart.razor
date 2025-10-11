@@ -106,7 +106,6 @@
 
                         <MudButton Variant="Variant.Filled"
                                    Color="Color.Primary"
-                                   Size="MudBlazor.Size.Large"
                                    FullWidth="true"
                                    Class="mt-4"
                                    OnClick="ProceedToCheckout">
@@ -148,6 +147,7 @@
     protected override void OnInitialized()
     {
         cartService.OnCartUpdated += StateHasChanged;
+        StateHasChanged();
     }
 
     private string GetProductCategory(int productId)
@@ -187,8 +187,7 @@
 
     private void ProceedToCheckout()
     {
-        // Implement checkout navigation
-        // Navigation.NavigateTo("/checkout");
+        Navigation.NavigateTo("/checkout");
     }
 
     public void Dispose()

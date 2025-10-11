@@ -71,7 +71,7 @@ namespace Thryft.Services
                 Colour.Teal => "color: #39cccc;",
                 Colour.Maroon => "color: #85144b;",
                 Colour.Beige => "color: #f5f5dc;",
-                _ => "color: var(--mud-palette-primary);"
+                _ => "color: var(--mud-palette-dark);"
             };
         }
     }
