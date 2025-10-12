@@ -40,7 +40,6 @@
 
     .circle-section {
         height: 70px;
-        width: 230px;
         overflow: scroll;
         scrollbar-width: none;
     }
@@ -147,7 +146,7 @@
 
         <div class="mt-auto pt-3">
             <MudButton Variant="Variant.Filled"
-                       Color="Color.Secondary"
+                       Color="Color.Info"
                        OnClick="ClearAllFilters"
                        FullWidth="true"
                        Class="mb-2">
@@ -179,7 +178,7 @@
 
             <!-- Sort Options -->
             <MudItem xs="6" Class="">
-                <MudMenu Variant="Variant.Filled" Color="Color.Info" Label="Sort By:" Style="color: #000; min-width: 200px; z-index: 1700 !important">
+                <MudMenu Variant="Variant.Filled" Color="Color.Info" Label="Sort By:" Style="color: #000; min-width: 200px;">
                     <MudMenuItem OnClick="@(() => OnSortChanged("name-asc"))">Name (A-Z)</MudMenuItem>
                     <MudMenuItem OnClick="@(() => OnSortChanged("name-desc"))">Name (Z-A)</MudMenuItem>
                     <MudMenuItem OnClick="@(() => OnSortChanged("price-asc"))">Price (Low to High)</MudMenuItem>
@@ -209,7 +208,7 @@
         </MudItem>
 
         <MudItem xs="2" Class="d-flex align-center justify-end">
-            <MudMenu Variant="Variant.Filled" Color="Color.Info" Label="Manage Products" Style="color: #000; z-index: 13000 !important;">
+            <MudMenu Variant="Variant.Filled" Color="Color.Info" Label="Manage Products" Style="color: #000; ">
                 <MudMenuItem OnClick="NavigateToAddProducts">Add Products</MudMenuItem>
             </MudMenu>
             
@@ -267,7 +266,7 @@
     </MudGrid>
 }
 
-<MudGrid Style="z-index: 15000 !important">
+<MudGrid Style="z-index: 15000 !important; margin-bottom: 20px;">
     @if (filteredProducts.Any())
     {
         @foreach (var product in filteredProducts)
@@ -361,7 +360,7 @@
     else
     {
         <MudItem xs="12" Class="text-center py-8">
-            <MudText Typo="Typo.h6" Color="Color.Secondary">No products found matching your filters</MudText>
+            <MudText Typo="Typo.h6" Color="Color.Primary">No products found matching your filters</MudText>
             <MudButton Variant="Variant.Outlined"
                        Color="Color.Info"
                        OnClick="ClearAllFilters"
@@ -421,7 +420,7 @@
             }
 
             maxPrice = allProducts.Max(p => p.Price);
-            maxPriceFilter = maxPrice;
+            maxPriceFilter = Math.Ceiling(maxPrice);
 
             // Initialize category states
             foreach (var category in allProducts.Select(p => p.Category).Distinct())
