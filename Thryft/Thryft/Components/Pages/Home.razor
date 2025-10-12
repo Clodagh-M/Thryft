@@ -89,7 +89,7 @@
 
             <!-- Color Filter -->
             <MudText Typo="Typo.subtitle1" Class="mb-3">Colors</MudText>
-            <div class="d-flex flex-wrap gap-2">
+            <div class="d-flex flex-wrap gap-2 circle-section">
                 @foreach (var color in allProducts.SelectMany(p => p.Colours).Distinct().OrderBy(c => c.ToString()))
                 {
                     <MudChip T="Colour"
@@ -161,24 +161,45 @@
             </MudItem>
         </MudGrid>
     </MudItem>
-    <MudItem xs="10">
-        <MudTextField Value="@searchTerm"
-                      ValueChanged="@(async (string value) => await OnSearchChanged(value))"
-                      T="string"
-                      Placeholder="Search Products..."
-                      Variant="Variant.Outlined"
-                      Margin="Margin.Dense"
-                      Clearable="true"
-                      Adornment="Adornment.End"
-                      AdornmentIcon="@Icons.Material.Outlined.Search"
-                      Immediate="true" />
-    </MudItem>
-    <MudItem xs="1" Class="d-flex align-center justify-end">
-        <MudIconButton Icon="@Icons.Material.Filled.ShoppingCart"
-                       OnClick="NavigateToCart"
-                       Color="Color.Primary" />
-        <MudText Typo="Typo.caption" Class="ml-2">@cartService.CurrentCart.TotalItems items</MudText>
-    </MudItem>
+
+    @if (test.Name == "sa")
+    {
+        <MudItem xs="10">
+            <MudTextField Value="@searchTerm"
+                          ValueChanged="@(async (string value) => await OnSearchChanged(value))"
+                          T="string"
+                          Placeholder="Search Products..."
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
+                          Clearable="true"
+                          Adornment="Adornment.End"
+                          AdornmentIcon="@Icons.Material.Outlined.Search"
+                          Immediate="true" />
+        </MudItem>
+
+        <MudItem xs="1" Class="d-flex align-center justify-end">
+            <MudButton OnClick="NavigateToAddProducts">Add Products</MudButton>
+        </MudItem>
+
+    }
+
+    else
+    {
+        <MudItem xs="11">
+            <MudTextField Value="@searchTerm"
+                          ValueChanged="@(async (string value) => await OnSearchChanged(value))"
+                          T="string"
+                          Placeholder="Search Products..."
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
+                          Clearable="true"
+                          Adornment="Adornment.End"
+                          AdornmentIcon="@Icons.Material.Outlined.Search"
+                          Immediate="true" />
+        </MudItem>
+    }
+
+    
 </MudGrid>
 
 <!-- Active Filters Display -->
@@ -340,6 +361,15 @@
 </MudGrid>
 
 @code {
+
+    private User test = new User
+    {
+        UserId = 3,
+        Name = "sa",
+        Email = "sa@test.com",
+        Password = "Test"
+    };
+
     private List<User> users;
     private List<Product> allProducts;
     private List<Product> filteredProducts;
@@ -393,9 +423,14 @@
     }
 
     private bool GetCategoryBinding(string category)
-{
-    return selectedCategories.Contains(category);
-}
+    {
+        return selectedCategories.Contains(category);
+    }
+
+    private void NavigateToAddProducts()
+    {
+        Navigation.NavigateTo("/add-product");
+    }
 
 private void SetCategoryBinding(string category, bool value)
 {

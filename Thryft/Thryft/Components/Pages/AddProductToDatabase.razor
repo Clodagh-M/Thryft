@@ -1,0 +1,327 @@
+﻿@page "/add-product"
+@using Thryft.Models
+@using Thryft.Services
+@inject ProductService productService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<PageTitle>Add Product - Thryft</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="my-8">
+    <MudText Typo="Typo.h4" Class="mb-6 text-center">Add New Product</MudText>
+
+    <MudCard>
+        <MudCardContent>
+            <MudGrid Spacing="2">
+                <!-- Product Name -->
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="newProduct.ProductName"
+                                  Label="Product Name"
+                                  Variant="Variant.Outlined"
+                                  Required="true"
+                                  RequiredError="Product name is required"
+                                  For="@(() => newProduct.ProductName)" />
+                </MudItem>
+
+                <!-- Price -->
+                <MudItem xs="12" sm="6">
+                    <MudTextField T="string" @bind-Value="priceString"
+                                  Label="Price (€)"
+                                  Variant="Variant.Outlined"
+                                  Required="true"
+                                  InputType="InputType.Number"
+                                  Step="0.01"
+                                  RequiredError="Price is required"
+                                  For="@(() => newProduct.Price.ToString())" />
+                </MudItem>
+
+                <!-- Stock -->
+                <MudItem xs="12" sm="6">
+                    <MudTextField T="string" @bind-Value="stockString"
+                                  Label="Stock Quantity"
+                                  Variant="Variant.Outlined"
+                                  Required="true"
+                                  InputType="InputType.Number"
+                                  RequiredError="Stock quantity is required"
+                                  For="@(() => newProduct.Stock.ToString())" />
+                </MudItem>
+
+                <!-- Category -->
+                <MudItem xs="12">
+                    <MudSelect @bind-Value="newProduct.Category"
+                               Label="Category"
+                               Variant="Variant.Outlined"
+                               Required="true"
+                               RequiredError="Category is required">
+                        @foreach (var category in availableCategories)
+                        {
+                            <MudSelectItem Value="@category">@category</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+
+                <!-- Colors Selection -->
+                <MudItem xs="12">
+                    <MudText Typo="Typo.subtitle1" Class="mb-3">Available Colors</MudText>
+                    <div class="d-flex flex-wrap gap-2">
+                        @foreach (var color in allColors)
+                        {
+                            <MudChip T="Colour"
+                                     Value="@color"
+                                     OnClick="@(() => ToggleColor(color))"
+                                     Variant="@(selectedColors.Contains(color) ? Variant.Filled : Variant.Outlined)"
+                                     Class="color-chip p-0"
+                                     Style="@GetChipStyle(color)">
+                                ㅤ
+                            </MudChip>
+                        }
+                    </div>
+                    @if (!colorsValid)
+                    {
+                        <MudText Typo="Typo.caption" Color="Color.Error">At least one color must be selected</MudText>
+                    }
+                </MudItem>
+
+                <!-- Sizes Selection -->
+                <MudItem xs="12">
+                    <MudText Typo="Typo.subtitle1" Class="mb-3">Available Sizes</MudText>
+                    <div class="d-flex flex-wrap gap-2">
+                        @foreach (var size in allSizes)
+                        {
+                            <MudChip T="Thryft.Models.Size"
+                                     Value="@size"
+                                     OnClick="@(() => ToggleSize(size))"
+                                     Variant="@(selectedSizes.Contains(size) ? Variant.Filled : Variant.Outlined)"
+                                     Color="Color.Primary">
+                                @GetSizeDisplayName(size)
+                            </MudChip>
+                        }
+                    </div>
+                    @if (!sizesValid)
+                    {
+                        <MudText Typo="Typo.caption" Color="Color.Error">At least one size must be selected</MudText>
+                    }
+                </MudItem>
+            </MudGrid>
+        </MudCardContent>
+
+        <MudCardActions>
+            <MudButton Variant="Variant.Text"
+                       Color="Color.Default"
+                       OnClick="Cancel"
+                       Class="ml-auto">
+                Cancel
+            </MudButton>
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       OnClick="AddProduct"
+                       Disabled="@(!IsFormValid)">
+                Add Product
+            </MudButton>
+        </MudCardActions>
+    </MudCard>
+
+    <!-- Success/Error Alert -->
+    @if (!string.IsNullOrEmpty(alertMessage))
+    {
+        <MudAlert Class="mt-4"
+                  Severity="@alertSeverity"
+                  Variant="Variant.Filled"
+                  Elevation="2">
+            @alertMessage
+        </MudAlert>
+    }
+</MudContainer>
+
+@code {
+    private Product newProduct = new Product();
+    private string priceString = "";
+    private string stockString = "";
+
+    private HashSet<Colour> selectedColors = new HashSet<Colour>();
+    private HashSet<Thryft.Models.Size> selectedSizes = new HashSet<Thryft.Models.Size>();
+
+    private bool colorsValid = true;
+    private bool sizesValid = true;
+
+    private string alertMessage = "";
+    private Severity alertSeverity = Severity.Success;
+
+    private List<string> availableCategories = new List<string>
+    {
+        "T-Shirts", "Hoodies", "Pants", "Shoes", "Accessories",
+        "Jackets", "Shorts", "Dresses"
+    };
+
+    // Available options
+    private readonly List<Colour> allColors = new List<Colour>
+    {
+        Colour.Red, Colour.Blue, Colour.Green, Colour.Black, Colour.White,
+        Colour.Yellow, Colour.Pink, Colour.Purple, Colour.Orange, Colour.Grey,
+        Colour.Brown, Colour.Navy, Colour.Teal, Colour.Maroon, Colour.Beige
+    };
+
+    private readonly List<Thryft.Models.Size> allSizes = new List<Thryft.Models.Size>
+    {
+        Thryft.Models.Size.XS, Thryft.Models.Size.S, Thryft.Models.Size.M, Thryft.Models.Size.L, Thryft.Models.Size.XL, Thryft.Models.Size.XXL,
+        Thryft.Models.Size.XXXL
+    };
+
+    private bool IsFormValid
+    {
+        get
+        {
+            return !string.IsNullOrWhiteSpace(newProduct.ProductName) &&
+                   !string.IsNullOrWhiteSpace(priceString) &&
+                   decimal.TryParse(priceString, out decimal price) &&
+                   price > 0 &&
+                   !string.IsNullOrWhiteSpace(stockString) &&
+                   int.TryParse(stockString, out int stock) &&
+                   stock >= 0 &&
+                   !string.IsNullOrWhiteSpace(newProduct.Category) &&
+                   selectedColors.Any() &&
+                   selectedSizes.Any();
+        }
+    }
+
+    private void ToggleColor(Colour color)
+    {
+        if (selectedColors.Contains(color))
+            selectedColors.Remove(color);
+        else
+            selectedColors.Add(color);
+
+        colorsValid = selectedColors.Any();
+        StateHasChanged();
+    }
+
+    private void ToggleSize(Thryft.Models.Size size)
+    {
+        if (selectedSizes.Contains(size))
+            selectedSizes.Remove(size);
+        else
+            selectedSizes.Add(size);
+
+        sizesValid = selectedSizes.Any();
+        StateHasChanged();
+    }
+
+    private async Task AddProduct()
+    {
+        try
+        {
+            // Validate form
+            if (!IsFormValid)
+            {
+                ShowAlert("Please fill in all required fields correctly.", Severity.Error);
+                return;
+            }
+
+            // Parse numeric values
+            if (!decimal.TryParse(priceString, out decimal price) || price <= 0)
+            {
+                ShowAlert("Please enter a valid price greater than 0.", Severity.Error);
+                return;
+            }
+
+            if (!int.TryParse(stockString, out int stock) || stock < 0)
+            {
+                ShowAlert("Please enter a valid stock quantity.", Severity.Error);
+                return;
+            }
+
+            // Set product properties
+            newProduct.Price = price;
+            newProduct.Stock = stock;
+            newProduct.Colours = selectedColors.ToArray();
+            newProduct.Sizes = selectedSizes.ToArray();
+
+            // Call service to add product
+            var success = await productService.AddProductAsync(newProduct);
+
+            if (success)
+            {
+                ShowAlert("Product added successfully!", Severity.Success);
+                ResetForm();
+
+                // Optional: Navigate back to home after a delay
+                await Task.Delay(2000);
+                Navigation.NavigateTo("/home");
+            }
+            else
+            {
+                ShowAlert("Failed to add product. Please try again.", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowAlert($"An error occurred: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/home");
+    }
+
+    private void ResetForm()
+    {
+        newProduct = new Product();
+        priceString = "";
+        stockString = "";
+        selectedColors.Clear();
+        selectedSizes.Clear();
+        colorsValid = true;
+        sizesValid = true;
+        StateHasChanged();
+    }
+
+    private void ShowAlert(string message, Severity severity)
+    {
+        alertMessage = message;
+        alertSeverity = severity;
+        StateHasChanged();
+    }
+
+    private string GetChipStyle(Colour colour)
+    {
+        return $"min-width: 33px !important; background-color: {GetColorHex(colour)}; color: {GetTextColor(colour)}; border: 2px solid {GetBorderColor(colour)}; min-width: 60px;";
+    }
+
+    private string GetColorHex(Colour colour) => colour switch
+    {
+        Colour.Red => "#f44336",
+        Colour.Blue => "#2196f3",
+        Colour.Green => "#4caf50",
+        Colour.Black => "#000000",
+        Colour.White => "#ffffff",
+        Colour.Yellow => "#ffeb3b",
+        Colour.Pink => "#e91e63",
+        Colour.Purple => "#9c27b0",
+        Colour.Orange => "#ff9800",
+        Colour.Grey => "#9e9e9e",
+        Colour.Brown => "#795548",
+        Colour.Navy => "#001f3f",
+        Colour.Teal => "#39cccc",
+        Colour.Maroon => "#85144b",
+        Colour.Beige => "#f5f5dc",
+        _ => "#ffffff"
+    };
+
+    private string GetTextColor(Colour colour) => colour switch
+    {
+        Colour.Black or Colour.Navy or Colour.Maroon or Colour.Brown or Colour.Purple => "#ffffff",
+        _ => "#000000"
+    };
+
+    private string GetBorderColor(Colour colour) => colour switch
+    {
+        Colour.White or Colour.Beige or Colour.Yellow => "#ccc",
+        _ => "transparent"
+    };
+
+    private string GetSizeDisplayName(Thryft.Models.Size size)
+    {
+        return size.ToString().Replace("Size", "");
+    }
+}

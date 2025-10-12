@@ -1,0 +1,343 @@
+﻿@page "/orders"
+
+@using Thryft.Models
+@using Thryft.Services
+
+@inject OrderService orderService
+@inject ProductIconService productIconService
+@inject NavigationManager Navigation
+@inject ProductService productService
+
+@rendermode InteractiveServer
+
+<style>
+    .orders-container {
+        max-height: calc(100vh - 200px);
+        overflow-y: auto;
+        scrollbar-width: thin;
+    }
+
+    .order-card {
+        transition: box-shadow 0.3s ease-in-out;
+        border: 1px solid #e0e0e0;
+    }
+
+        .order-card:hover {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+    .order-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #e0e0e0;
+    }
+
+    .order-item {
+        border-bottom: 1px solid #f5f5f5;
+        padding: 16px 0;
+    }
+
+        .order-item:last-child {
+            border-bottom: none;
+        }
+
+    .product-icon-container {
+        width: 60px;
+        height: 60px;
+        background-color: #f5f5f5;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        margin-right: 16px;
+    }
+
+    .status-chip {
+        border-radius: 16px;
+        padding: 4px 12px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+
+    .empty-state {
+        padding: 80px 20px;
+        text-align: center;
+    }
+</style>
+
+<PageTitle>Thryft - My Orders</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="my-4">
+    <MudGrid>
+        <MudItem xs="12" Class="d-flex align-center justify-space-between mb-4">
+            <MudText Typo="Typo.h4">My Orders</MudText>
+            <MudButton Variant="Variant.Outlined"
+                       Color="Color.Primary"
+                       OnClick="ContinueShopping"
+                       StartIcon="@Icons.Material.Filled.ShoppingBag">
+                Continue Shopping
+            </MudButton>
+        </MudItem>
+
+        <MudItem xs="12">
+            @if (_orders.Any())
+            {
+                <div class="orders-container">
+                    @foreach (var order in _orders.OrderByDescending(o => o.Created))
+                    {
+                        <MudCard Class="order-card mb-4">
+                            <!-- Order Header -->
+                            <div class="order-header px-4 py-3">
+                                <MudGrid>
+                                    <MudItem xs="12" sm="6">
+                                        <div class="d-flex flex-column">
+                                            <MudText Typo="Typo.h6" Class="mb-1">Order #@order.OrderId</MudText>
+                                            <MudText Typo="Typo.caption" Color="Color.Primary">
+                                                Placed on @order.Created.ToString("MMMM dd, yyyy 'at' h:mm tt")
+                                            </MudText>
+                                        </div>
+                                    </MudItem>
+                                    <MudItem xs="12" sm="6" Class="d-flex align-center justify-end">
+                                        <div class="d-flex flex-column align-end">
+                                            <MudText Typo="Typo.h6" Color="Color.Dark">
+                                                €@order.Total.ToString("F2")
+                                            </MudText>
+                                            <div class="status-chip @GetStatusClass(order.Status)">
+                                                @GetStatusText(order.Status)
+                                            </div>
+                                        </div>
+                                    </MudItem>
+                                </MudGrid>
+                            </div>
+
+                            <!-- Order Items -->
+                            <MudCardContent Class="pa-0">
+                                @foreach (var item in order.OrderItems)
+                                {
+                                    <div class="order-item px-4">
+                                        <MudGrid>
+                                            <MudItem xs="12" sm="1" Class="d-flex align-center">
+                                                <div class="product-icon-container">
+                                                    <i class="@productIconService.GetProductIcon(GetProductCategory(item.ProductId), item.SelectedColour)"
+                                                       style="@productIconService.GetColorStyle(item.SelectedColour) font-size: 24px;"></i>
+                                                </div>
+                                            </MudItem>
+                                            <MudItem xs="12" sm="5">
+                                                <div class="d-flex flex-column">
+                                                    <MudText Typo="Typo.subtitle1" Class="mb-1">
+                                                        @GetProductName(item.ProductId)
+                                                    </MudText>
+                                                    <div class="d-flex gap-2">
+                                                        @if (item.SelectedColour.HasValue)
+                                                        {
+                                                            <MudText Typo="Typo.caption" Color="Color.Primary">
+                                                                Color: @item.SelectedColour.Value
+                                                            </MudText>
+                                                        }
+                                                        @if (item.SelectedSize.HasValue)
+                                                        {
+                                                            <MudText Typo="Typo.caption" Color="Color.Primary">
+                                                                Size: @item.SelectedSize.Value
+                                                            </MudText>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            </MudItem>
+                                            <MudItem xs="6" sm="3" Class="d-flex align-center">
+                                                <MudText Typo="Typo.body1">
+                                                    Qty: @item.Quantity
+                                                </MudText>
+                                            </MudItem>
+                                            <MudItem xs="6" sm="3" Class="d-flex align-center justify-end">
+                                                <MudText Typo="Typo.subtitle1" Color="Color.Primary">
+                                                    €@(item.UnitPrice* item.Quantity)
+                                                </MudText>
+                                            </MudItem>
+                                        </MudGrid>
+                                    </div>
+                                }
+                            </MudCardContent>
+
+                            <!-- Order Actions -->
+                            <MudCardActions Class="px-4 py-3">
+                                <div class="d-flex justify-end w-100">
+                                    <MudButton Variant="Variant.Text"
+                                               Color="Color.Primary"
+                                               Size="MudBlazor.Size.Small"
+                                               OnClick="@(() => ViewOrderDetails(order.OrderId))">
+                                        View Details
+                                    </MudButton>
+                                    @if (order.Status == "Completed")
+                                    {
+                                        <MudButton Variant="Variant.Outlined"
+                                                   Color="Color.Primary"
+                                                   Size="MudBlazor.Size.Small"
+                                                   Class="ml-2"
+                                                   OnClick="@(() => ReorderItems(order))">
+                                            Reorder
+                                        </MudButton>
+                                    }
+                                </div>
+                            </MudCardActions>
+                        </MudCard>
+                    }
+                </div>
+            }
+            else
+            {
+                <MudCard Class="empty-state">
+                    <MudCardContent>
+                        <MudIcon Icon="@Icons.Material.Filled.ShoppingBag"
+                                 Size="MudBlazor.Size.Large"
+                                 Color="Color.Secondary"
+                                 Class="mb-3" />
+                        <MudText Typo="Typo.h5" Class="mb-2">No Orders Yet</MudText>
+                        <MudText Typo="Typo.body1" Color="Color.Primary" Class="mb-4">
+                            You haven't placed any orders yet. Start shopping to see your orders here!
+                        </MudText>
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Primary"
+                                   OnClick="ContinueShopping"
+                                   StartIcon="@Icons.Material.Filled.ShoppingBag">
+                            Start Shopping
+                        </MudButton>
+                    </MudCardContent>
+                </MudCard>
+            }
+        </MudItem>
+    </MudGrid>
+</MudContainer>
+
+@code {
+    private List<Order> _orders = new List<Order>();
+    private Dictionary<int, string> _productNames = new Dictionary<int, string>();
+    private Dictionary<int, string> _productCategories = new Dictionary<int, string>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadOrders();
+    }
+
+    private async Task LoadOrders()
+    {
+        try
+        {
+            // Assuming you have a method to get orders for the current user
+            // You might need to pass the current user ID here
+            _orders = await orderService.GetUserOrdersAsync(1) ?? new List<Order>(); // Replace with actual user ID
+
+            // Load product names and categories for display
+            await LoadProductDetails();
+        }
+        catch (Exception ex)
+        {
+            // Handle error - you might want to show an error message
+            Console.WriteLine($"Error loading orders: {ex.Message}");
+        }
+    }
+
+    private async Task LoadProductDetails()
+    {
+        try
+        {
+            // Get all products from the product service
+            var allProducts = await productService.GetProductsAsync();
+
+            foreach (var order in _orders)
+            {
+                foreach (var item in order.OrderItems)
+                {
+                    if (!_productNames.ContainsKey(item.ProductId))
+                    {
+                        // Find the product in the list
+                        var product = allProducts.FirstOrDefault(p => p.ProductId == item.ProductId);
+
+                        if (product != null)
+                        {
+                            _productNames[item.ProductId] = product.ProductName;
+                            _productCategories[item.ProductId] = product.Category;
+                        }
+                        else
+                        {
+                            // Fallback if product not found
+                            _productNames[item.ProductId] = $"Product #{item.ProductId}";
+                            _productCategories[item.ProductId] = "clothing";
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading product details: {ex.Message}");
+            // Fallback to mock data if there's an error
+            foreach (var order in _orders)
+            {
+                foreach (var item in order.OrderItems)
+                {
+                    if (!_productNames.ContainsKey(item.ProductId))
+                    {
+                        _productNames[item.ProductId] = $"Product #{item.ProductId}";
+                        _productCategories[item.ProductId] = "clothing";
+                    }
+                }
+            }
+        }
+    }
+
+    private string GetProductName(int productId)
+    {
+        return _productNames.ContainsKey(productId) ? _productNames[productId] : $"Product #{productId}";
+    }
+
+    private string GetProductCategory(int productId)
+    {
+        return _productCategories.ContainsKey(productId) ? _productCategories[productId] : "clothing";
+    }
+
+    private string GetStatusClass(string status)
+    {
+        return status.ToLower() switch
+        {
+            "completed" => "mud-theme-success",
+            "processing" => "mud-theme-warning",
+            "shipped" => "mud-theme-info",
+            "cancelled" => "mud-theme-error",
+            _ => "mud-theme-secondary"
+        };
+    }
+
+    private string GetStatusText(string status)
+    {
+        return status switch
+        {
+            "Completed" => "✓ Completed",
+            "Processing" => "⏳ Processing",
+            "Shipped" => "🚚 Shipped",
+            "Cancelled" => "❌ Cancelled",
+            _ => status
+        };
+    }
+
+    private void ViewOrderDetails(int orderId)
+    {
+        // Navigate to order details page or show a dialog
+        // For now, we'll just show an alert
+        // Navigation.NavigateTo($"/order-details/{orderId}");
+    }
+
+    private void ReorderItems(Order order)
+    {
+        // Implementation to add all items from the order back to cart
+        // You would need to implement this in your cart service
+        // cartService.ReorderItems(order);
+
+        // Show success message
+        // Then optionally navigate to cart
+        Navigation.NavigateTo("/cart");
+    }
+
+    private void ContinueShopping()
+    {
+        Navigation.NavigateTo("/home");
+    }
+}

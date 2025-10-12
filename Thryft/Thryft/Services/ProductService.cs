@@ -19,10 +19,20 @@ public class ProductService
         return await context.Products.ToListAsync();
     }
 
-    public async Task AddProductAsync(Product product)
+    public async Task<bool> AddProductAsync(Product product)
     {
-        using var context = _contextFactory.CreateDbContext();
-        context.Products.Add(product);
-        await context.SaveChangesAsync();
+        try
+        {
+            using var context = _contextFactory.CreateDbContext();
+            context.Products.Add(product);
+            await context.SaveChangesAsync();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            // Log error
+            Console.WriteLine($"Error adding product: {ex.Message}");
+            return false;
+        }
     }
 }

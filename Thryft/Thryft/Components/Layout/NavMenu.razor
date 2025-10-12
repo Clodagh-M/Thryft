@@ -4,20 +4,23 @@
 
 @rendermode InteractiveServer
 
-<MudAppBar Class="py-1">
+<MudPopoverProvider />
+
+<MudAppBar Class="py-2" Style="z-index: 1300 !important;">
     @* <MudIconButton Color="Color.Tertiary" Icon="@Icons.Material.Filled.Menu" Href="">Filter</MudIconButton> *@
     <MudSpacer />
-    <MudText>thryft</MudText>
+    <MudText @onclick="NavigateToHome">thryft</MudText>
     <MudSpacer/>
     <MudBadge Color="Color.Dark" Content="@cartService.CurrentCart.TotalItems" Max="99">
         <MudIconButton Icon="@Icons.Material.Filled.ShoppingCart"
-                       OnClick="NavigateToCart"
+                       Href="/cart"
                        Color="Color.Tertiary" />
     </MudBadge>
-    <MudMenu Color="Color.Tertiary" Class="ms-4" Icon="@Icons.Material.Filled.Person">
-        <MudMenuItem OnClick="NavigateToOrders">Orders</MudMenuItem>
-        <MudMenuItem></MudMenuItem>
-        <MudMenuItem></MudMenuItem>
+    <MudMenu Color="Color.Tertiary" Class="ms-4" Icon="@Icons.Material.Filled.Person" Style="z-index: 15000">
+        <MudMenuItem Onclick="NavigateToProfile">Profile</MudMenuItem>
+        <MudMenuItem Onclick="NavigateToOrders">Orders</MudMenuItem>
+        <MudDivider/>
+        <MudMenuItem Href="/">Logout</MudMenuItem>
     </MudMenu>
 </MudAppBar>
 
@@ -28,14 +31,24 @@
         cartService.OnCartUpdated += StateHasChanged;
     }
 
+    private void NavigateToHome()
+    {
+        Navigation.NavigateTo("/home");
+    }
+
     private void NavigateToCart()
     {
         Navigation.NavigateTo("/cart");
     }
 
+    private void NavigateToProfile()
+    {
+        Navigation.NavigateTo("/profile");
+    }
+
     private void NavigateToOrders()
     {
-        Navigation.NavigateTo("/home");
+        Navigation.NavigateTo("/orders");
     }
 
     public void Dispose()
