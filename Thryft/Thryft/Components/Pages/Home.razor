@@ -12,18 +12,19 @@
 @rendermode InteractiveServer
 
 <style>
+
     .filter-sidebar {
         transition: transform 0.3s ease-in-out;
         z-index: 2500 !important;
     }
 
-        .filter-sidebar.closed {
-            transform: translateX(-100%);
-        }
+    .filter-sidebar.closed {
+        transform: translateX(-100%);
+    }
 
-        .filter-sidebar.open {
-            transform: translateX(0);
-        }
+    .filter-sidebar.open {
+        transform: translateX(0);
+    }
 
     .filter-overlay {
         background-color: rgba(0, 0, 0, 0.5);
@@ -53,6 +54,7 @@
     .circle-section {
         align-items: center;
     }
+
 </style>
 
 <PageTitle>Home</PageTitle>
@@ -66,8 +68,8 @@
         </div>
 
         <div class="flex-grow-1" style="overflow-y: auto;">
-            @* <!-- Category Filter -->
-            <MudText Typo="Typo.subtitle1" Class="mb-3">Category</MudText>
+            <!-- Category Filter -->
+            @* <MudText Typo="Typo.subtitle1" Class="mb-3">Category</MudText>
             @foreach (var category in allProducts.Select(p => p.Category).Distinct().OrderBy(c => c))
             {
                 <MudCheckBox T="bool"
@@ -76,30 +78,45 @@
                              Class="mb-2" />
             }
 
-            <MudDivider Class="my-4" />
+            <MudDivider Class="my-4" /> *@
 
             <!-- Stock Filter -->
             <MudText Typo="Typo.subtitle1" Class="mb-3">Stock Status</MudText>
             <MudCheckBox T="bool"
-                         @bind-Value="showInStockOnly"
+                         Color="Color.Info"
+                         Value="@showInStockOnly"
+                         ValueChanged="@(async (bool value) => await OnStockFilterChanged(value))"
                          Label="In Stock Only"
                          Class="mb-2" />
 
-            <MudDivider Class="my-4" /> *@
+            <MudDivider Class="my-4" />
 
             <!-- Color Filter -->
             <MudText Typo="Typo.subtitle1" Class="mb-3">Colors</MudText>
-            <div class="d-flex flex-wrap gap-2 circle-section">
-                @foreach (var color in allProducts.SelectMany(p => p.Colours).Distinct().OrderBy(c => c.ToString()))
+            <div class="d-flex flex-wrap gap-2">
+                @foreach (var colour in allProducts.SelectMany(p => p.Colours).Distinct().OrderBy(c => c.ToString()))
                 {
+                    <div>
                     <MudChip T="Colour"
-                             Value="@color"
-                             OnClick="@(() => OnColorFilterChanged(color))"
-                             Variant="@(selectedColorsFilter.Contains(color) ? Variant.Filled : Variant.Outlined)"
-                             Class="color-chip p-0"
-                             Style="@GetChipStyle(color)">
-                        ㅤ
-                    </MudChip>
+                                 Value="@colour"
+                                 OnClick="@(() => OnColorFilterChanged(colour))"
+                                 Variant="@(selectedColorsFilter.Contains(colour) ? Variant.Filled : Variant.Outlined)"
+                                 Icon="@(selectedColorsFilter.Contains(colour) ? Icons.Material.Filled.Check : "none")"
+                                 Class="color-chip p-0"
+                                 Style="@GetChipStyle(colour)">
+                            @if (selectedColorsFilter.Contains(colour))
+                            {
+                                //no content
+                            }
+                            else
+                            {
+                                <span>ㅤ</span> //invisible character
+                            }
+                            
+                        </MudChip>
+                    <MudText class="text-center">@colour</MudText>
+                    </div>
+                    <br />
                 }
             </div>
 
@@ -146,56 +163,73 @@
     </div>
 </div>
 
-@if (showFilters)
+@* @if (showFilters)
 {
     <div class="filter-overlay position-fixed top-0 start-0 w-100 h-100 z-index-2400"
          style="pointer-events: none;"
          @onclick="ToggleFilters"></div>
-}
+} *@
 
-<MudGrid Class="my-2">
-    <MudItem xs="1" Class="d-flex align-center justify-end">
+<MudGrid Class="mt-1 mb-3">
+    <MudItem xs="2" Class="">
         <MudGrid>
             <MudItem xs="6">
-                <MudButton OnClick="ToggleFilters">Filters</MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Info" OnClick="ToggleFilters">Filters</MudButton>
+            </MudItem>
+
+            <!-- Sort Options -->
+            <MudItem xs="6" Class="">
+                <MudMenu Variant="Variant.Filled" Color="Color.Info" Label="Sort By:" Style="color: #000; min-width: 200px; z-index: 1700 !important">
+                    <MudMenuItem OnClick="@(() => OnSortChanged("name-asc"))">Name (A-Z)</MudMenuItem>
+                    <MudMenuItem OnClick="@(() => OnSortChanged("name-desc"))">Name (Z-A)</MudMenuItem>
+                    <MudMenuItem OnClick="@(() => OnSortChanged("price-asc"))">Price (Low to High)</MudMenuItem>
+                    <MudMenuItem OnClick="@(() => OnSortChanged("price-desc"))">Price (High to Low)</MudMenuItem>
+                    <MudMenuItem OnClick="@(() => OnSortChanged("stock-desc"))">Stock (High to Low)</MudMenuItem>
+                    <MudMenuItem OnClick="@(() => OnSortChanged("stock-asc"))">Stock (Low to High)</MudMenuItem>
+                </MudMenu>
             </MudItem>
         </MudGrid>
     </MudItem>
 
+
     @if (test.Name == "sa")
     {
-        <MudItem xs="10">
+        <MudItem xs="8">
             <MudTextField Value="@searchTerm"
-                          ValueChanged="@(async (string value) => await OnSearchChanged(value))"
-                          T="string"
-                          Placeholder="Search Products..."
-                          Variant="Variant.Outlined"
-                          Margin="Margin.Dense"
-                          Clearable="true"
-                          Adornment="Adornment.End"
-                          AdornmentIcon="@Icons.Material.Outlined.Search"
-                          Immediate="true" />
+                        ValueChanged="@(async (string value) => await OnSearchChanged(value))"
+                        T="string"
+                        Placeholder="Search Products..."
+                        Variant="Variant.Outlined"
+                        Margin="Margin.Dense"
+                        Clearable="true"
+                        Adornment="Adornment.End"
+                        AdornmentIcon="@Icons.Material.Outlined.Search"
+                        Immediate="true" 
+                        Style="background-color: white"/>
         </MudItem>
 
-        <MudItem xs="1" Class="d-flex align-center justify-end">
-            <MudButton OnClick="NavigateToAddProducts">Add Products</MudButton>
+        <MudItem xs="2" Class="d-flex align-center justify-end">
+            <MudMenu Variant="Variant.Filled" Color="Color.Info" Label="Manage Products" Style="color: #000; z-index: 13000 !important;">
+                <MudMenuItem OnClick="NavigateToAddProducts">Add Products</MudMenuItem>
+            </MudMenu>
+            
         </MudItem>
 
     }
 
     else
     {
-        <MudItem xs="11">
+        <MudItem xs="10">
             <MudTextField Value="@searchTerm"
-                          ValueChanged="@(async (string value) => await OnSearchChanged(value))"
-                          T="string"
-                          Placeholder="Search Products..."
-                          Variant="Variant.Outlined"
-                          Margin="Margin.Dense"
-                          Clearable="true"
-                          Adornment="Adornment.End"
-                          AdornmentIcon="@Icons.Material.Outlined.Search"
-                          Immediate="true" />
+                    ValueChanged="@(async (string value) => await OnSearchChanged(value))"
+                    T="string"
+                    Placeholder="Search Products..."
+                    Variant="Variant.Outlined"
+                    Margin="Margin.Dense"
+                    Clearable="true"
+                    Adornment="Adornment.End"
+                    AdornmentIcon="@Icons.Material.Outlined.Search"
+                    Immediate="true" />
         </MudItem>
     }
 
@@ -233,29 +267,7 @@
     </MudGrid>
 }
 
-<!-- Sort Options -->
-@* <MudGrid Class="my-2 px-4">
-    <MudItem xs="12">
-        <div class="d-flex align-center gap-2">
-            <MudText Typo="Typo.body2">Sort by:</MudText>
-            <MudSelect T="string"
-                       Variant="Variant.Outlined"
-                       Value="@currentSort"
-                       ValueChanged="@(async (string value) => await OnSortChanged(value))"
-                       Size="Size.Small"
-                       Style="min-width: 200px;">
-                <MudSelectItem Value="@("name-asc")">Name (A-Z)</MudSelectItem>
-                <MudSelectItem Value="@("name-desc")">Name (Z-A)</MudSelectItem>
-                <MudSelectItem Value="@("price-asc")">Price (Low to High)</MudSelectItem>
-                <MudSelectItem Value="@("price-desc")">Price (High to Low)</MudSelectItem>
-                <MudSelectItem Value="@("stock-desc")">Stock (High to Low)</MudSelectItem>
-                <MudSelectItem Value="@("stock-asc")">Stock (Low to High)</MudSelectItem>
-            </MudSelect>
-        </div>
-    </MudItem>
-</MudGrid> *@
-
-<MudGrid Class="z-index-1500">
+<MudGrid Style="z-index: 15000 !important">
     @if (filteredProducts.Any())
     {
         @foreach (var product in filteredProducts)
@@ -334,7 +346,7 @@
                                 <MudSpacer />
                                 <MudButton Style="width: 100%"
                                            Variant="Variant.Filled"
-                                           Color="Color.Primary"
+                                           Color="Color.Info"
                                            Disabled="@(!CanAddToCart(product))"
                                            OnClick="@(() => AddToCart(product))">
                                     Add to Cart
@@ -351,7 +363,7 @@
         <MudItem xs="12" Class="text-center py-8">
             <MudText Typo="Typo.h6" Color="Color.Secondary">No products found matching your filters</MudText>
             <MudButton Variant="Variant.Outlined"
-                       Color="Color.Primary"
+                       Color="Color.Info"
                        OnClick="ClearAllFilters"
                        Class="mt-4">
                 Clear All Filters

@@ -12,97 +12,100 @@
 
     <MudCard>
         <MudCardContent>
-            <MudGrid Spacing="2">
-                <!-- Product Name -->
-                <MudItem xs="12">
-                    <MudTextField @bind-Value="newProduct.ProductName"
-                                  Label="Product Name"
-                                  Variant="Variant.Outlined"
-                                  Required="true"
-                                  RequiredError="Product name is required"
-                                  For="@(() => newProduct.ProductName)" />
-                </MudItem>
+            <EditForm Model="@newProduct" OnValidSubmit="@AddProduct" OnInvalidSubmit="@OnInvalidSubmit">
+                <MudGrid Spacing="2">
+                    <!-- Product Name -->
+                    <MudItem xs="12">
+                        <MudTextField @bind-Value="newProduct.ProductName"
+                                      Label="Product Name"
+                                      Variant="Variant.Outlined"
+                                      Required="true"
+                                      RequiredError="Product name is required" />
+                    </MudItem>
 
-                <!-- Price -->
-                <MudItem xs="12" sm="6">
-                    <MudTextField T="string" @bind-Value="priceString"
-                                  Label="Price (€)"
-                                  Variant="Variant.Outlined"
-                                  Required="true"
-                                  InputType="InputType.Number"
-                                  Step="0.01"
-                                  RequiredError="Price is required"
-                                  For="@(() => newProduct.Price.ToString())" />
-                </MudItem>
+                    <!-- Price -->
+                    <MudItem xs="12" sm="6">
+                        <MudTextField T="string"
+                                      @bind-Value="priceString"
+                                      Label="Price (€)"
+                                      Variant="Variant.Outlined"
+                                      Required="true"
+                                      InputType="InputType.Number"
+                                      Step="0.01"
+                                      RequiredError="Price is required"
+                                      Validation="@(new Func<string, IEnumerable<string>>(ValidatePrice))" />
+                    </MudItem>
 
-                <!-- Stock -->
-                <MudItem xs="12" sm="6">
-                    <MudTextField T="string" @bind-Value="stockString"
-                                  Label="Stock Quantity"
-                                  Variant="Variant.Outlined"
-                                  Required="true"
-                                  InputType="InputType.Number"
-                                  RequiredError="Stock quantity is required"
-                                  For="@(() => newProduct.Stock.ToString())" />
-                </MudItem>
+                    <!-- Stock -->
+                    <MudItem xs="12" sm="6">
+                        <MudTextField T="string"
+                                      @bind-Value="stockString"
+                                      Label="Stock Quantity"
+                                      Variant="Variant.Outlined"
+                                      Required="true"
+                                      InputType="InputType.Number"
+                                      RequiredError="Stock quantity is required"
+                                      Validation="@(new Func<string, IEnumerable<string>>(ValidateStock))" />
+                    </MudItem>
 
-                <!-- Category -->
-                <MudItem xs="12">
-                    <MudSelect @bind-Value="newProduct.Category"
-                               Label="Category"
-                               Variant="Variant.Outlined"
-                               Required="true"
-                               RequiredError="Category is required">
-                        @foreach (var category in availableCategories)
+                    <!-- Category -->
+                    <MudItem xs="12">
+                        <MudSelect @bind-Value="newProduct.Category"
+                                   Label="Category"
+                                   Variant="Variant.Outlined"
+                                   Required="true"
+                                   RequiredError="Category is required">
+                            @foreach (var category in availableCategories)
+                            {
+                                <MudSelectItem Value="@category">@category</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+
+                    <!-- Colors Selection -->
+                    <MudItem xs="12">
+                        <MudText Typo="Typo.subtitle1" Class="mb-3">Available Colors</MudText>
+                        <div class="d-flex flex-wrap gap-2">
+                            @foreach (var color in allColors)
+                            {
+                                <MudChip T="Colour"
+                                         Value="@color"
+                                         OnClick="@(() => ToggleColor(color))"
+                                         Variant="@(selectedColors.Contains(color) ? Variant.Filled : Variant.Outlined)"
+                                         Class="color-chip p-0"
+                                         Style="@GetChipStyle(color)">
+                                    ㅤ
+                                </MudChip>
+                            }
+                        </div>
+                        @if (!colorsValid)
                         {
-                            <MudSelectItem Value="@category">@category</MudSelectItem>
+                            <MudText Typo="Typo.caption" Color="Color.Error">At least one color must be selected</MudText>
                         }
-                    </MudSelect>
-                </MudItem>
+                    </MudItem>
 
-                <!-- Colors Selection -->
-                <MudItem xs="12">
-                    <MudText Typo="Typo.subtitle1" Class="mb-3">Available Colors</MudText>
-                    <div class="d-flex flex-wrap gap-2">
-                        @foreach (var color in allColors)
+                    <!-- Sizes Selection -->
+                    <MudItem xs="12">
+                        <MudText Typo="Typo.subtitle1" Class="mb-3">Available Sizes</MudText>
+                        <div class="d-flex flex-wrap gap-2">
+                            @foreach (var size in allSizes)
+                            {
+                                <MudChip T="Thryft.Models.Size"
+                                         Value="@size"
+                                         OnClick="@(() => ToggleSize(size))"
+                                         Variant="@(selectedSizes.Contains(size) ? Variant.Filled : Variant.Outlined)"
+                                         Color="Color.Primary">
+                                    @GetSizeDisplayName(size)
+                                </MudChip>
+                            }
+                        </div>
+                        @if (!sizesValid)
                         {
-                            <MudChip T="Colour"
-                                     Value="@color"
-                                     OnClick="@(() => ToggleColor(color))"
-                                     Variant="@(selectedColors.Contains(color) ? Variant.Filled : Variant.Outlined)"
-                                     Class="color-chip p-0"
-                                     Style="@GetChipStyle(color)">
-                                ㅤ
-                            </MudChip>
+                            <MudText Typo="Typo.caption" Color="Color.Error">At least one size must be selected</MudText>
                         }
-                    </div>
-                    @if (!colorsValid)
-                    {
-                        <MudText Typo="Typo.caption" Color="Color.Error">At least one color must be selected</MudText>
-                    }
-                </MudItem>
-
-                <!-- Sizes Selection -->
-                <MudItem xs="12">
-                    <MudText Typo="Typo.subtitle1" Class="mb-3">Available Sizes</MudText>
-                    <div class="d-flex flex-wrap gap-2">
-                        @foreach (var size in allSizes)
-                        {
-                            <MudChip T="Thryft.Models.Size"
-                                     Value="@size"
-                                     OnClick="@(() => ToggleSize(size))"
-                                     Variant="@(selectedSizes.Contains(size) ? Variant.Filled : Variant.Outlined)"
-                                     Color="Color.Primary">
-                                @GetSizeDisplayName(size)
-                            </MudChip>
-                        }
-                    </div>
-                    @if (!sizesValid)
-                    {
-                        <MudText Typo="Typo.caption" Color="Color.Error">At least one size must be selected</MudText>
-                    }
-                </MudItem>
-            </MudGrid>
+                    </MudItem>
+                </MudGrid>
+            </EditForm>
         </MudCardContent>
 
         <MudCardActions>
@@ -149,8 +152,10 @@
 
     private List<string> availableCategories = new List<string>
     {
-        "T-Shirts", "Hoodies", "Pants", "Shoes", "Accessories",
-        "Jackets", "Shorts", "Dresses"
+        "Jumper", "Jacket", "Clothing", "Shirt", "T-Shirt", 
+        "Dress", "Pants", "Shoes", "Socks", "Hat", "Jewelery", 
+        "Earrings", "Bag", "Watch", "Glasses", "Electronics", 
+        "Book", "Sports", "Accessories"
     };
 
     // Available options
@@ -256,6 +261,51 @@
         catch (Exception ex)
         {
             ShowAlert($"An error occurred: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private void OnInvalidSubmit()
+    {
+        ShowAlert("Please fix the validation errors before submitting.", Severity.Error);
+    }
+
+    private IEnumerable<string> ValidatePrice(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            yield return "Price is required";
+            yield break;
+        }
+
+        if (!decimal.TryParse(value, out decimal price))
+        {
+            yield return "Price must be a valid number";
+            yield break;
+        }
+
+        if (price <= 0)
+        {
+            yield return "Price must be greater than 0";
+        }
+    }
+
+    private IEnumerable<string> ValidateStock(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            yield return "Stock quantity is required";
+            yield break;
+        }
+
+        if (!int.TryParse(value, out int stock))
+        {
+            yield return "Stock must be a valid number";
+            yield break;
+        }
+
+        if (stock < 0)
+        {
+            yield return "Stock cannot be negative";
         }
     }
 

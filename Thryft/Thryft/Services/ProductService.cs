@@ -19,6 +19,22 @@ public class ProductService
         return await context.Products.ToListAsync();
     }
 
+    public async Task<Product?> GetProductByIdAsync(int productId)
+    {
+        try
+        {
+            using var context = _contextFactory.CreateDbContext();
+            return await context.Products
+                .FirstOrDefaultAsync(p => p.ProductId == productId);
+        }
+        catch (Exception ex)
+        {
+            // Log error
+            Console.WriteLine($"Error getting product by ID {productId}: {ex.Message}");
+            return null;
+        }
+    }
+
     public async Task<bool> AddProductAsync(Product product)
     {
         try

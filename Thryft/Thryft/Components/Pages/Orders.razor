@@ -158,14 +158,8 @@
                             </MudCardContent>
 
                             <!-- Order Actions -->
-                            <MudCardActions Class="px-4 py-3">
+                            @* <MudCardActions Class="px-4 py-3">
                                 <div class="d-flex justify-end w-100">
-                                    <MudButton Variant="Variant.Text"
-                                               Color="Color.Primary"
-                                               Size="MudBlazor.Size.Small"
-                                               OnClick="@(() => ViewOrderDetails(order.OrderId))">
-                                        View Details
-                                    </MudButton>
                                     @if (order.Status == "Completed")
                                     {
                                         <MudButton Variant="Variant.Outlined"
@@ -177,7 +171,7 @@
                                         </MudButton>
                                     }
                                 </div>
-                            </MudCardActions>
+                            </MudCardActions> *@
                         </MudCard>
                     }
                 </div>

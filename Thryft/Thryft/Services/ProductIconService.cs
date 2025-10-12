@@ -8,8 +8,8 @@ namespace Thryft.Services
         {
             var iconClass = category?.ToLower() switch
             {
-                "clothing" or "shirt" or "t-shirt" => "fa-shirt",
-                "dress" => "fa-vest",
+                "clothing" or "shirt" or "t-shirt" => "fa-tshirt",
+                "dress" => "fa-female",
                 "pants" or "trousers" => "fa-user",
                 "shoes" or "sneakers" => "fa-shoe-prints",
                 "socks" => "fa-socks",
@@ -21,7 +21,9 @@ namespace Thryft.Services
                 "electronics" => "fa-laptop",
                 "book" => "fa-book",
                 "sports" => "fa-basketball-ball",
-                "accessories" => "fa-brands fa-black-tie",
+                "accessories" => "fa-vest",
+                "jacket" => "fa-jacket", 
+                "jumper" => "fa-shirt", 
                 _ => "fa-cube"
             };
 

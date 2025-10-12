@@ -1,6 +1,8 @@
-﻿@using Thryft.Services
+﻿@using Thryft.Models
+@using Thryft.Services
 @inject CartService cartService
 @inject NavigationManager Navigation
+@inject UserService userService
 
 @rendermode InteractiveServer
 
@@ -11,6 +13,7 @@
     <MudSpacer />
     <MudText @onclick="NavigateToHome">thryft</MudText>
     <MudSpacer/>
+    <MudText Class="pe-1">Welcome @user.Name</MudText>
     <MudBadge Color="Color.Dark" Content="@cartService.CurrentCart.TotalItems" Max="99">
         <MudIconButton Icon="@Icons.Material.Filled.ShoppingCart"
                        Href="/cart"
@@ -25,10 +28,22 @@
 </MudAppBar>
 
 @code {
+    // private User user = userService.currentUser;
+
+    private User user = new User
+    {
+        UserId = 4,
+        Name = "TEST USER",
+        Email = "test@test.com",
+        Password = "Test"
+    };
+
     protected override void OnInitialized()
     {
         // Subscribe to cart updates so the badge updates in real-time
         cartService.OnCartUpdated += StateHasChanged;
+
+
     }
 
     private void NavigateToHome()

@@ -11,6 +11,8 @@ public class UserService
 {
     private readonly IDbContextFactory<AppDbContext> _contextFactory;
 
+    public User currentUser;
+
     public UserService(IDbContextFactory<AppDbContext> contextFactory)
     {
         _contextFactory = contextFactory;
@@ -25,7 +27,8 @@ public class UserService
     public async Task<User> GetUserAsync(string email)
     {
         using var context = _contextFactory.CreateDbContext();
-        return await context.Users.FirstOrDefaultAsync(u => u.Email == email);
+        currentUser = await context.Users.FirstOrDefaultAsync(u => u.Email == email);
+        return currentUser;
     }
 
     public async Task<User> ValidateUserCredentialsAsync(string email, string password)
