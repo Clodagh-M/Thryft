@@ -40,10 +40,11 @@ public class UserService
         var user = await context.Users
             .FirstOrDefaultAsync(u => u.Email == email);
 
-        Console.WriteLine(user);
-
         if (user == null)
             return null;
+
+        // Hash the entered password and compare with stored hash
+        //string enteredPasswordHash = HashPassword(password);
 
         if (user.Password == password)
         {
