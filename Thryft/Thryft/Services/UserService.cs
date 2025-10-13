@@ -1,24 +1,77 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using MudBlazor.Interfaces;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using Thryft.Data;
 using Thryft.Models;
+
 
 namespace Thryft.Services;
 
 public class UserService
 {
     private readonly IDbContextFactory<AppDbContext> _contextFactory;
+    private readonly ProtectedLocalStorage _protectedLocalStorage;
 
     public User currentUser;
 
-    // Add event to notify when user changes
     public event Action OnUserChanged;
 
-    public UserService(IDbContextFactory<AppDbContext> contextFactory)
+    public UserService(IDbContextFactory<AppDbContext> contextFactory, ProtectedLocalStorage protectedLocalStorage)
     {
         _contextFactory = contextFactory;
+        _protectedLocalStorage = protectedLocalStorage;
+        _ = InitializeUserAsync(); // Initialize on service creation
+    }
+
+    private async Task InitializeUserAsync()
+    {
+        try
+        {
+            // Try to get user from local storage on service initialization
+            var storedUser = await _protectedLocalStorage.GetAsync<User>("currentUser");
+            if (storedUser.Success && storedUser.Value != null)
+            {
+                currentUser = storedUser.Value;
+                OnUserChanged?.Invoke();
+            }
+        }
+        catch (CryptographicException)
+        {
+            // Local storage might be encrypted with different key, ignore
+            await _protectedLocalStorage.DeleteAsync("currentUser");
+        }
+    }
+
+    public async Task<User> ValidateUserCredentialsAsync(string email, string password)
+    {
+        using var context = _contextFactory.CreateDbContext();
+        var user = await context.Users
+            .FirstOrDefaultAsync(u => u.Email == email);
+
+        if (user == null)
+            return null;
+
+        if (user.Password == password)
+        {
+            currentUser = user;
+            await _protectedLocalStorage.SetAsync("currentUser", user);
+            OnUserChanged?.Invoke();
+            return user;
+        }
+
+        return null;
+    }
+
+    public void Logout()
+    {
+        currentUser = null;
+        _protectedLocalStorage.DeleteAsync("currentUser");
+        OnUserChanged?.Invoke();
+        
     }
 
     public async Task<List<User>> GetUsersAsync()
@@ -34,35 +87,6 @@ public class UserService
         return currentUser;
     }
 
-    public async Task<User> ValidateUserCredentialsAsync(string email, string password)
-    {
-        using var context = _contextFactory.CreateDbContext();
-        var user = await context.Users
-            .FirstOrDefaultAsync(u => u.Email == email);
-
-        if (user == null)
-            return null;
-
-        // Hash the entered password and compare with stored hash
-        //string enteredPasswordHash = HashPassword(password);
-
-        if (user.Password == password)
-        {
-            currentUser = user;
-            OnUserChanged?.Invoke(); // Notify subscribers
-            return user;
-        }
-
-        return null;
-    }
-
-    // Add logout method
-    public void Logout()
-    {
-        currentUser = null;
-        OnUserChanged?.Invoke(); // Notify subscribers
-    }
-
     private string HashPassword(string password)
     {
         using var sha256 = System.Security.Cryptography.SHA256.Create();
@@ -76,11 +100,9 @@ public class UserService
         using var context = _contextFactory.CreateDbContext();
         context.Users.Add(user);
         await context.SaveChangesAsync();
-
-        currentUser = user;
-        OnUserChanged?.Invoke(); // Notify subscribers
     }
 
+    // to get the current user logged in
     public async Task<User?> GetCurrentUserAsync(ClaimsPrincipal principal)
     {
         if (principal?.Identity?.IsAuthenticated != true)

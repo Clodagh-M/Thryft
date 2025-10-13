@@ -1,52 +1,81 @@
 ﻿@page "/login"
-
 @using Thryft.Models
 @using Thryft.Services
 @inject UserService userService
 @inject NavigationManager navigationManager
 @using System.Text.RegularExpressions
 @using System.ComponentModel.DataAnnotations
+@rendermode InteractiveServer
 
 <PageTitle>Login</PageTitle>
 
 <MudGrid>
+    <MudSpacer />
     <MudItem xs="12" sm="7">
         <MudCard Class="pa-4">
             <MudForm @ref="form">
                 <MudTextField T="string" Label="Email" RequiredError="Email is required!" @bind-Value="email" Immediate="true"
                               Validation="@(new EmailAddressAttribute() {ErrorMessage = "The email address is invalid"})" />
-        
+
                 <MudTextField T="string" Label="Password" InputType="InputType.Password" @bind-Value="password" @ref="pwField"
                               Validation="@(new Func<string, IEnumerable<string>>(PasswordStrength))" Immediate="true"
                               RequiredError="Password is required!" />
             </MudForm>
+
+            <br />
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="HandleLogin">Login</MudButton>
+
+            <br />
+
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <MudAlert Severity="Severity.Error">@errorMessage</MudAlert>
+        }
         </MudCard>
-        <MudSpacer/>
-            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@(() => form.Validate())">Login</MudButton>
-        <MudSpacer />
     </MudItem>
     <MudSpacer />
 </MudGrid>
 
 @code {
-
     MudForm form;
     private string email;
     private string password;
-
-    protected override async Task OnInitializedAsync()
-    {
-        var user = await userService.ValidateUserCredentialsAsync(email, password);
-    }
-
-
-
-
-
-
-
+    private string errorMessage;
     MudTextField<string> pwField;
-    MudTextField<string> emField;
+
+    private async Task HandleLogin()
+    {
+        await form.Validate();
+
+        if (!form.IsValid)
+            return;
+
+        try
+        {
+            var user = await userService.ValidateUserCredentialsAsync(email, password);
+            Console.WriteLine($"User found: {user}");
+
+            if (user != null)
+            {
+                // Force state update before navigation
+                StateHasChanged();
+                await Task.Delay(100); // Small delay to ensure UI updates
+
+                navigationManager.NavigateTo("/home", forceLoad: false); // Don't force load
+            }
+            else
+            {
+                errorMessage = "Invalid email or password";
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Login failed. Please try again.";
+            Console.WriteLine($"Login error: {ex.Message}");
+            StateHasChanged();
+        }
+    }
 
     private IEnumerable<string> PasswordStrength(string pw)
     {

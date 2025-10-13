@@ -191,7 +191,7 @@
     </MudItem>
 
 
-    @if (test.Name == "sa")
+    @if (user?.Email == "thryft-sa-user@gmail.com")
     {
         <MudItem xs="8">
             <MudTextField Value="@searchTerm"
@@ -267,7 +267,7 @@
 }
 
 <MudGrid Style="z-index: 15000 !important; margin-bottom: 20px;">
-    @if (filteredProducts.Any())
+    @if (filteredProducts?.Any() == true)
     {
         @foreach (var product in filteredProducts)
         {
@@ -372,14 +372,7 @@
 </MudGrid>
 
 @code {
-
-    private User test = new User
-    {
-        UserId = 3,
-        Name = "sa",
-        Email = "sa@test.com",
-        Password = "Test"
-    };
+    private User user;
 
     private List<User> users;
     private List<Product> allProducts;
@@ -408,29 +401,72 @@
 
     protected override async Task OnInitializedAsync()
     {
-        allProducts = await productService.GetProductsAsync() ?? new List<Product>();
-        filteredProducts = new List<Product>(allProducts);
-
-        if (allProducts.Any())
+        try
         {
-            foreach (var product in allProducts)
+            // Subscribe to user changes first
+            userService.OnUserChanged += OnUserChanged;
+
+            // Initialize user after userService is available
+            user = userService.currentUser;
+
+            // Initialize products with null handling
+            allProducts = await productService.GetProductsAsync() ?? new List<Product>();
+            filteredProducts = new List<Product>(allProducts);
+
+            // Only proceed if we have products
+            if (allProducts != null && allProducts.Any())
             {
-                colourExpandedStates[product.ProductId] = true;
-                sizeExpandedStates[product.ProductId] = true;
+                foreach (var product in allProducts)
+                {
+                    colourExpandedStates[product.ProductId] = true;
+                    sizeExpandedStates[product.ProductId] = true;
+                }
+
+                maxPrice = allProducts.Max(p => p.Price);
+                maxPriceFilter = Math.Ceiling(maxPrice);
+
+                // Initialize category states with null checking
+                var categories = allProducts.Select(p => p.Category).Distinct();
+                if (categories != null)
+                {
+                    foreach (var category in categories)
+                    {
+                        if (!string.IsNullOrEmpty(category))
+                        {
+                            categoryStates[category] = false;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                // Initialize empty collections if no products
+                allProducts = new List<Product>();
+                filteredProducts = new List<Product>();
+                maxPrice = 1000;
+                maxPriceFilter = 1000;
             }
 
-            maxPrice = allProducts.Max(p => p.Price);
-            maxPriceFilter = Math.Ceiling(maxPrice);
-
-            // Initialize category states
-            foreach (var category in allProducts.Select(p => p.Category).Distinct())
-            {
-                categoryStates[category] = false;
-            }
+            ApplyAllFilters();
+            cartService.OnCartUpdated += OnCartUpdated;
+        }
+        catch (Exception ex)
+        {
+            // Log the exception and initialize empty collections
+            Console.WriteLine($"Error during initialization: {ex.Message}");
+            allProducts = new List<Product>();
+            filteredProducts = new List<Product>();
+            maxPrice = 1000;
+            maxPriceFilter = 1000;
         }
 
-        ApplyAllFilters();
-        cartService.OnCartUpdated += OnCartUpdated;
+        StateHasChanged();
+    }
+
+    private void OnUserChanged()
+    {
+        user = userService.currentUser;
+        StateHasChanged();
     }
 
     private bool GetCategoryBinding(string category)
@@ -548,7 +584,8 @@ private void SetCategoryBinding(string category, bool value)
 
     private void ApplyAllFilters()
     {
-        var results = allProducts.AsEnumerable();
+        // Start with all products or empty list if null
+        var results = allProducts?.AsEnumerable() ?? Enumerable.Empty<Product>();
 
         // Apply search filter - match ALL search terms
         if (!string.IsNullOrWhiteSpace(searchTerm))
@@ -556,6 +593,7 @@ private void SetCategoryBinding(string category, bool value)
             var searchTerms = searchTerm.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
             results = results.Where(product =>
+                product != null &&
                 searchTerms.All(term =>
                     product.ProductName?.Contains(term, StringComparison.OrdinalIgnoreCase) == true ||
                     product.Category?.Contains(term, StringComparison.OrdinalIgnoreCase) == true ||
@@ -568,22 +606,22 @@ private void SetCategoryBinding(string category, bool value)
         // Apply category filters
         if (selectedCategories.Any())
         {
-            results = results.Where(p => selectedCategories.Contains(p.Category));
+            results = results.Where(p => p != null && selectedCategories.Contains(p.Category));
         }
 
         // Apply color filters
         if (selectedColorsFilter.Any())
         {
-            results = results.Where(p => p.Colours.Any(c => selectedColorsFilter.Contains(c)));
+            results = results.Where(p => p != null && p.Colours?.Any(c => selectedColorsFilter.Contains(c)) == true);
         }
 
         // Apply price filter
-        results = results.Where(p => p.Price >= minPriceFilter && p.Price <= maxPriceFilter);
+        results = results.Where(p => p != null && p.Price >= minPriceFilter && p.Price <= maxPriceFilter);
 
         // Apply stock filter
         if (showInStockOnly)
         {
-            results = results.Where(p => p.Stock > 0);
+            results = results.Where(p => p != null && p.Stock > 0);
         }
 
         filteredProducts = results.ToList();
@@ -593,34 +631,34 @@ private void SetCategoryBinding(string category, bool value)
 
     private void SortProducts()
     {
-        var query = filteredProducts.AsEnumerable();
+        var query = filteredProducts?.AsEnumerable() ?? Enumerable.Empty<Product>();
 
         switch (currentSort)
         {
             case "name-asc":
-                query = query.OrderBy(p => p.ProductName);
+                query = query.OrderBy(p => p?.ProductName);
                 break;
             case "name-desc":
-                query = query.OrderByDescending(p => p.ProductName);
+                query = query.OrderByDescending(p => p?.ProductName);
                 break;
             case "price-asc":
-                query = query.OrderBy(p => p.Price);
+                query = query.OrderBy(p => p?.Price ?? 0);
                 break;
             case "price-desc":
-                query = query.OrderByDescending(p => p.Price);
+                query = query.OrderByDescending(p => p?.Price ?? 0);
                 break;
             case "stock-desc":
-                query = query.OrderByDescending(p => p.Stock);
+                query = query.OrderByDescending(p => p?.Stock ?? 0);
                 break;
             case "stock-asc":
-                query = query.OrderBy(p => p.Stock);
+                query = query.OrderBy(p => p?.Stock ?? 0);
                 break;
             default:
-                query = query.OrderBy(p => p.ProductName);
+                query = query.OrderBy(p => p?.ProductName);
                 break;
         }
 
-        filteredProducts = query.ToList();
+        filteredProducts = query.Where(p => p != null).ToList();
     }
 
     private void ClearAllFilters()

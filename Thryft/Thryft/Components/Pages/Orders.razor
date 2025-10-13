@@ -7,6 +7,7 @@
 @inject ProductIconService productIconService
 @inject NavigationManager Navigation
 @inject ProductService productService
+@inject UserService userService
 
 @rendermode InteractiveServer
 
@@ -202,13 +203,30 @@
 </MudContainer>
 
 @code {
+    
+    private User user;
+
     private List<Order> _orders = new List<Order>();
     private Dictionary<int, string> _productNames = new Dictionary<int, string>();
     private Dictionary<int, string> _productCategories = new Dictionary<int, string>();
 
     protected override async Task OnInitializedAsync()
     {
+        // Subscribe to user changes
+        userService.OnUserChanged += OnUserChanged;
+
+        // Initialize user after userService is available
+        user = userService.currentUser;
+
+        StateHasChanged();
+
         await LoadOrders();
+    }
+
+    private void OnUserChanged()
+    {
+        user = userService.currentUser;
+        StateHasChanged();
     }
 
     private async Task LoadOrders()
@@ -217,7 +235,7 @@
         {
             // Assuming you have a method to get orders for the current user
             // You might need to pass the current user ID here
-            _orders = await orderService.GetUserOrdersAsync(1) ?? new List<Order>(); // Replace with actual user ID
+            _orders = await orderService.GetUserOrdersAsync(user.UserId) ?? new List<Order>(); // Replace with actual user ID
 
             // Load product names and categories for display
             await LoadProductDetails();

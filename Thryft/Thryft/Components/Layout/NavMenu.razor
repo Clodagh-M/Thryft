@@ -19,7 +19,7 @@
     }
     else
     {
-        <MudText Class="pe-1">Welcome @user.Name</MudText>
+        <MudText Class="pe-1"><b>Welcome</b> @GetFirstName(user.Name)</MudText>
 
         <MudBadge Color="Color.Dark" Content="@cartService.CurrentCart.TotalItems" Max="99">
             <MudIconButton Icon="@Icons.Material.Filled.ShoppingCart"
@@ -58,6 +58,15 @@
         StateHasChanged();
     }
 
+    private string GetFirstName(string fullName)
+    {
+        if (string.IsNullOrEmpty(fullName))
+            return fullName;
+
+        // Split by space and return only the first part
+        return fullName.Split(' ')[0];
+    }
+
     private void NavigateToHome()
     {
         Navigation.NavigateTo("/home");
@@ -81,6 +90,7 @@
     private void HandleLogout()
     {
         userService.Logout();
+        StateHasChanged();
         Navigation.NavigateTo("/");
     }
 
