@@ -6,6 +6,7 @@
 @inject CartService cartService
 @inject NavigationManager Navigation
 @inject ProductIconService productIconService
+@inject ProductService productService
 
 @rendermode InteractiveServer
 
@@ -144,17 +145,67 @@
 </MudContainer>
 
 @code {
+
+    private Dictionary<int, string> _productCategories = new();
+
     protected override void OnInitialized()
     {
         cartService.OnCartUpdated += StateHasChanged;
+
+        LoadProductCategories();
+
+        Console.WriteLine(_productCategories);
+
         StateHasChanged();
+    }
+
+    private async Task LoadProductCategories()
+    {
+        _productCategories.Clear();
+        foreach (var item in cartService.CurrentCart.Items)
+        {
+            if (!_productCategories.ContainsKey(item.ProductId))
+            {
+                var product = await productService.GetProductByIdAsync(item.ProductId);
+                _productCategories[item.ProductId] = product?.Category?.ToLower() ?? "unknown";
+                Console.WriteLine($"Loaded - Product ID: {item.ProductId}, Category: {_productCategories[item.ProductId]}");
+            }
+        }
     }
 
     private string GetProductCategory(int productId)
     {
-        // You might need to get the actual product category from your data
-        // For now, return a default or implement based on your data structure
-        return "clothing"; // Replace with actual category lookup
+        if (_productCategories.TryGetValue(productId, out var category))
+        {
+            Console.WriteLine($"Getting icon for Product ID: {productId}, Category: {category}");
+
+            var iconClass = category switch
+            {
+                "clothing" or "shirt" or "t-shirt" => "fa-tshirt",
+                "dress" => "fa-female",
+                "pants" or "trousers" => "fa-user",
+                "shoes" or "sneakers" => "fa-shoe-prints",
+                "socks" => "fa-socks",
+                "hat" or "cap" => "fa-hat-cowboy",
+                "jewelry" or "earrings" => "fa-gem",
+                "bag" or "purse" => "fa-bag-shopping",
+                "watch" => "fa-clock",
+                "glasses" or "sunglasses" => "fa-glasses",
+                "electronics" => "fa-laptop",
+                "book" => "fa-book",
+                "sports" => "fa-basketball-ball",
+                "accessories" => "fa-vest",
+                "jacket" => "fa-jacket",
+                "jumper" => "fa-shirt",
+                _ => "fa-cube"
+            };
+
+            Console.WriteLine($"Icon class: {iconClass}");
+            return $"fas {iconClass}";
+        }
+
+        Console.WriteLine($"Category not found for Product ID: {productId}");
+        return "fas fa-cube";
     }
 
     private void IncreaseQuantity(CartItem item)
