@@ -9,27 +9,46 @@
 
 <PageTitle>Login</PageTitle>
 
-<MudGrid>
-    <MudItem xs="12" sm="7">
-        <MudCard Class="pa-4">
-            <MudForm @ref="form">
-                <MudTextField T="string" Label="Email" RequiredError="Email is required!" @bind-Value="email" Immediate="true"
-                              Validation="@(new EmailAddressAttribute() {ErrorMessage = "The email address is invalid"})" />
 
-                <MudTextField T="string" Label="Password" InputType="InputType.Password" @bind-Value="password" @ref="pwField"
-                              Validation="@(new Func<string, IEnumerable<string>>(PasswordStrength))" Immediate="true"
-                              RequiredError="Password is required!" />
-            </MudForm>
-        </MudCard>
-        <MudSpacer />
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="HandleLogin">Login</MudButton>
-        <MudSpacer />
 
-        @if (!string.IsNullOrEmpty(errorMessage))
-        {
-            <MudAlert Severity="Severity.Error">@errorMessage</MudAlert>
-        }
+<MudGrid Class="mt-10 text-center">
+    <MudSpacer />
+
+    <MudItem xs="12">
+        <MudText Typo="Typo.body1">Don't have a user?</MudText>
+        <MudLink Href="/" Class="ml-1">Register here!</MudLink>
     </MudItem>
+
+    <MudItem xs="12">
+        <MudGrid>
+            <MudSpacer />
+            <MudItem xs="6">
+            <MudCard Class="pa-4">
+                <MudForm @ref="form">
+                    <MudTextField T="string" Label="Email" RequiredError="Email is required!" @bind-Value="email" Immediate="true"
+                                  Validation="@(new EmailAddressAttribute() {ErrorMessage = "The email address is invalid"})" />
+
+                    <MudTextField T="string" Label="Password" InputType="InputType.Password" @bind-Value="password" @ref="pwField"
+                                  Validation="@(new Func<string, IEnumerable<string>>(PasswordStrength))" Immediate="true"
+                                  RequiredError="Password is required!" />
+                </MudForm>
+
+                <br />
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="HandleLogin">Login</MudButton>
+
+                <br />
+
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <MudAlert Severity="Severity.Error">@errorMessage</MudAlert>
+            }
+        
+            </MudCard>
+            </MudItem>
+            <MudSpacer />
+        </MudGrid>
+    </MudItem>
+    <MudSpacer />
 </MudGrid>
 
 @code {
