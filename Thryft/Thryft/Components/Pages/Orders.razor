@@ -1,5 +1,6 @@
 ﻿@page "/orders"
 
+@using Microsoft.AspNetCore.Components.Authorization
 @using Thryft.Models
 @using Thryft.Services
 
@@ -67,140 +68,161 @@
 
 <PageTitle>Thryft - My Orders</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Large" Class="my-4">
-    <MudGrid>
-        <MudItem xs="12" Class="d-flex align-center justify-space-between mb-4">
-            <MudText Typo="Typo.h4">My Orders</MudText>
-            <MudButton Variant="Variant.Filled"
-                       Color="Color.Primary"
-                       OnClick="ContinueShopping"
-                       StartIcon="@Icons.Material.Filled.ShoppingBag">
-                Continue Shopping
-            </MudButton>
-        </MudItem>
+<AuthorizeView>
+    <Authorized>
 
-        <MudItem xs="12">
-            @if (_orders.Any())
-            {
-                <div class="orders-container">
-                    @foreach (var order in _orders.OrderByDescending(o => o.Created))
+
+        <MudContainer MaxWidth="MaxWidth.Large" Class="my-4">
+            <MudGrid>
+                <MudItem xs="12" Class="d-flex align-center justify-space-between mb-4">
+                    <MudText Typo="Typo.h4">My Orders</MudText>
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               OnClick="ContinueShopping"
+                               StartIcon="@Icons.Material.Filled.ShoppingBag">
+                        Continue Shopping
+                    </MudButton>
+                </MudItem>
+
+                <MudItem xs="12">
+                    @if (_orders.Any())
                     {
-                        <MudCard Class="order-card mb-4">
-                            <!-- Order Header -->
-                            <div class="order-header px-4 py-3">
-                                <MudGrid>
-                                    <MudItem xs="12" sm="6">
-                                        <div class="d-flex flex-column">
-                                            <MudText Typo="Typo.h6" Class="mb-1">Order #@order.OrderId</MudText>
-                                            <MudText Typo="Typo.caption" Color="Color.Primary">
-                                                Placed on @order.Created.ToString("MMMM dd, yyyy 'at' h:mm tt")
-                                            </MudText>
-                                        </div>
-                                    </MudItem>
-                                    <MudItem xs="12" sm="6" Class="d-flex align-center justify-end">
-                                        <div class="d-flex flex-column align-end">
-                                            <MudText Typo="Typo.h6" Color="Color.Info">
-                                                €@order.Total.ToString("F2")
-                                            </MudText>
-                                            <div class="status-chip @GetStatusClass(order.Status)">
-                                                @GetStatusText(order.Status)
-                                            </div>
-                                        </div>
-                                    </MudItem>
-                                </MudGrid>
-                            </div>
-
-                            <!-- Order Items -->
-                            <MudCardContent Class="pa-0">
-                                @foreach (var item in order.OrderItems)
-                                {
-                                    <div class="order-item px-4">
+                        <div class="orders-container">
+                            @foreach (var order in _orders.OrderByDescending(o => o.Created))
+                            {
+                                <MudCard Class="order-card mb-4">
+                                    <!-- Order Header -->
+                                    <div class="order-header px-4 py-3">
                                         <MudGrid>
-                                            <MudItem xs="12" sm="1" Class="d-flex align-center">
-                                                <div class="product-icon-container">
-                                                    <i class="@productIconService.GetProductIcon(GetProductCategory(item.ProductId), item.SelectedColour)"
-                                                       style="@productIconService.GetColorStyle(item.SelectedColour) font-size: 24px;"></i>
+                                            <MudItem xs="12" sm="6">
+                                                <div class="d-flex flex-column">
+                                                    <MudText Typo="Typo.h6" Class="mb-1">Order #@order.OrderId</MudText>
+                                                    <MudText Typo="Typo.caption" Color="Color.Primary">
+                                                        Placed on @order.Created.ToString("MMMM dd, yyyy 'at' h:mm tt")
+                                                    </MudText>
                                                 </div>
                                             </MudItem>
-                                            <MudItem xs="12" sm="5">
-                                                <div class="d-flex flex-column">
-                                                    <MudText Typo="Typo.subtitle1" Class="mb-1">
-                                                        @GetProductName(item.ProductId)
+                                            <MudItem xs="12" sm="6" Class="d-flex align-center justify-end">
+                                                <div class="d-flex flex-column align-end">
+                                                    <MudText Typo="Typo.h6" Color="Color.Info">
+                                                        €@order.Total.ToString("F2")
                                                     </MudText>
-                                                    <div class="d-flex gap-2">
-                                                        @if (item.SelectedColour.HasValue)
-                                                        {
-                                                            <MudText Typo="Typo.caption" Color="Color.Primary">
-                                                                Color: @item.SelectedColour.Value
-                                                            </MudText>
-                                                        }
-                                                        @if (item.SelectedSize.HasValue)
-                                                        {
-                                                            <MudText Typo="Typo.caption" Color="Color.Primary">
-                                                                Size: @item.SelectedSize.Value
-                                                            </MudText>
-                                                        }
+                                                    <div class="status-chip @GetStatusClass(order.Status)">
+                                                        @GetStatusText(order.Status)
                                                     </div>
                                                 </div>
                                             </MudItem>
-                                            <MudItem xs="6" sm="3" Class="d-flex align-center">
-                                                <MudText Typo="Typo.body1">
-                                                    Qty: @item.Quantity
-                                                </MudText>
-                                            </MudItem>
-                                            <MudItem xs="6" sm="3" Class="d-flex align-center justify-end">
-                                                <MudText Typo="Typo.subtitle1" Color="Color.Primary">
-                                                    €@(item.UnitPrice* item.Quantity)
-                                                </MudText>
-                                            </MudItem>
                                         </MudGrid>
                                     </div>
-                                }
-                            </MudCardContent>
 
-                            <!-- Order Actions -->
-                            @* <MudCardActions Class="px-4 py-3">
-                                <div class="d-flex justify-end w-100">
-                                    @if (order.Status == "Completed")
-                                    {
-                                        <MudButton Variant="Variant.Outlined"
-                                                   Color="Color.Primary"
-                                                   Size="MudBlazor.Size.Small"
-                                                   Class="ml-2"
-                                                   OnClick="@(() => ReorderItems(order))">
-                                            Reorder
-                                        </MudButton>
-                                    }
-                                </div>
-                            </MudCardActions> *@
+                                    <!-- Order Items -->
+                                    <MudCardContent Class="pa-0">
+                                        @foreach (var item in order.OrderItems)
+                                        {
+                                            <div class="order-item px-4">
+                                                <MudGrid>
+                                                    <MudItem xs="12" sm="1" Class="d-flex align-center">
+                                                        <div class="product-icon-container">
+                                                            <i class="@productIconService.GetProductIcon(GetProductCategory(item.ProductId), item.SelectedColour)"
+                                                               style="@productIconService.GetColorStyle(item.SelectedColour) font-size: 24px;"></i>
+                                                        </div>
+                                                    </MudItem>
+                                                    <MudItem xs="12" sm="5">
+                                                        <div class="d-flex flex-column">
+                                                            <MudText Typo="Typo.subtitle1" Class="mb-1">
+                                                                @GetProductName(item.ProductId)
+                                                            </MudText>
+                                                            <div class="d-flex gap-2">
+                                                                @if (item.SelectedColour.HasValue)
+                                                                {
+                                                                    <MudText Typo="Typo.caption" Color="Color.Primary">
+                                                                        Color: @item.SelectedColour.Value
+                                                                    </MudText>
+                                                                }
+                                                                @if (item.SelectedSize.HasValue)
+                                                                {
+                                                                    <MudText Typo="Typo.caption" Color="Color.Primary">
+                                                                        Size: @item.SelectedSize.Value
+                                                                    </MudText>
+                                                                }
+                                                            </div>
+                                                        </div>
+                                                    </MudItem>
+                                                    <MudItem xs="6" sm="3" Class="d-flex align-center">
+                                                        <MudText Typo="Typo.body1">
+                                                            Qty: @item.Quantity
+                                                        </MudText>
+                                                    </MudItem>
+                                                    <MudItem xs="6" sm="3" Class="d-flex align-center justify-end">
+                                                        <MudText Typo="Typo.subtitle1" Color="Color.Primary">
+                                                            €@(item.UnitPrice* item.Quantity)
+                                                        </MudText>
+                                                    </MudItem>
+                                                </MudGrid>
+                                            </div>
+                                        }
+                                    </MudCardContent>
+
+                                    <!-- Order Actions -->
+                                    @* <MudCardActions Class="px-4 py-3">
+                                        <div class="d-flex justify-end w-100">
+                                            @if (order.Status == "Completed")
+                                            {
+                                                <MudButton Variant="Variant.Outlined"
+                                                           Color="Color.Primary"
+                                                           Size="MudBlazor.Size.Small"
+                                                           Class="ml-2"
+                                                           OnClick="@(() => ReorderItems(order))">
+                                                    Reorder
+                                                </MudButton>
+                                            }
+                                        </div>
+                                    </MudCardActions> *@
+                                </MudCard>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <MudCard Class="empty-state">
+                            <MudCardContent>
+                                <MudIcon Icon="@Icons.Material.Filled.ShoppingBag"
+                                         Size="MudBlazor.Size.Large"
+                                         Color="Color.Secondary"
+                                         Class="mb-3" />
+                                <MudText Typo="Typo.h5" Class="mb-2">No Orders Yet</MudText>
+                                <MudText Typo="Typo.body1" Color="Color.Primary" Class="mb-4">
+                                    You haven't placed any orders yet. Start shopping to see your orders here!
+                                </MudText>
+                                <MudButton Variant="Variant.Filled"
+                                           Color="Color.Primary"
+                                           OnClick="ContinueShopping"
+                                           StartIcon="@Icons.Material.Filled.ShoppingBag">
+                                    Start Shopping
+                                </MudButton>
+                            </MudCardContent>
                         </MudCard>
                     }
-                </div>
-            }
-            else
-            {
-                <MudCard Class="empty-state">
-                    <MudCardContent>
-                        <MudIcon Icon="@Icons.Material.Filled.ShoppingBag"
-                                 Size="MudBlazor.Size.Large"
-                                 Color="Color.Secondary"
-                                 Class="mb-3" />
-                        <MudText Typo="Typo.h5" Class="mb-2">No Orders Yet</MudText>
-                        <MudText Typo="Typo.body1" Color="Color.Primary" Class="mb-4">
-                            You haven't placed any orders yet. Start shopping to see your orders here!
-                        </MudText>
-                        <MudButton Variant="Variant.Filled"
-                                   Color="Color.Primary"
-                                   OnClick="ContinueShopping"
-                                   StartIcon="@Icons.Material.Filled.ShoppingBag">
-                            Start Shopping
-                        </MudButton>
-                    </MudCardContent>
-                </MudCard>
-            }
-        </MudItem>
-    </MudGrid>
-</MudContainer>
+                </MudItem>
+            </MudGrid>
+        </MudContainer>
+    </Authorized>
+    <NotAuthorized>
+        <MudContainer Class="text-center py-16">
+            <MudIcon Icon="@Icons.Material.Filled.Lock" Size="MudBlazor.Size.Large" Color="Color.Primary" Class="mb-4" />
+            <MudText Typo="Typo.h4" Class="mb-3">Authentication Required</MudText>
+            <MudText Typo="Typo.body1" Color="Color.Primary" Class="mb-4">
+                Please log in to view your orders.
+            </MudText>
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       OnClick="RedirectToLogin"
+                       StartIcon="@Icons.Material.Filled.Login">
+                Log In
+            </MudButton>
+        </MudContainer>
+    </NotAuthorized>
+</AuthorizeView>
 
 @code {
     
@@ -221,6 +243,10 @@
         StateHasChanged();
 
         await LoadOrders();
+    }
+    private void RedirectToLogin()
+    {
+        Navigation.NavigateTo("/login", true);
     }
 
     private void OnUserChanged()

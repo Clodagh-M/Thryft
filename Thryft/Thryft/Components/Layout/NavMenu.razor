@@ -3,6 +3,7 @@
 @inject CartService cartService
 @inject NavigationManager Navigation
 @inject UserService userService
+@inject AuthService authService
 
 @rendermode InteractiveServer
 
@@ -87,11 +88,10 @@
         Navigation.NavigateTo("/orders");
     }
 
-    private void HandleLogout()
+    private async Task HandleLogout()
     {
-        userService.Logout();
-        StateHasChanged();
-        Navigation.NavigateTo("/");
+        await authService.LogoutAsync();
+        Navigation.NavigateTo("/login", true);
     }
 
     public void Dispose()

@@ -2,6 +2,7 @@
 @using Thryft.Services
 @inject CartService cartService
 @inject NavigationManager Navigation
+@inject AuthService AuthService
 
 <MudThemeProvider Theme="ThryftTheme" />
 <MudDialogProvider />
@@ -69,4 +70,18 @@
             TextPrimary = "#493129"
         }
     };
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await AuthService.InitializeAsync();
+            StateHasChanged();
+        }
+    }
+
+    private async Task Logout()
+    {
+        await AuthService.LogoutAsync();
+    }
 }

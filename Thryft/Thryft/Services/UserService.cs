@@ -1,13 +1,10 @@
 ﻿using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using MudBlazor.Interfaces;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using Thryft.Data;
 using Thryft.Models;
-
 
 namespace Thryft.Services;
 
@@ -15,34 +12,51 @@ public class UserService
 {
     private readonly IDbContextFactory<AppDbContext> _contextFactory;
     private readonly ProtectedLocalStorage _protectedLocalStorage;
+    private readonly CustomAuthenticationStateProvider _authStateProvider;
+    private bool _isInitialized = false;
 
     public User currentUser;
 
     public event Action OnUserChanged;
 
-    public UserService(IDbContextFactory<AppDbContext> contextFactory, ProtectedLocalStorage protectedLocalStorage)
+    public UserService(
+        IDbContextFactory<AppDbContext> contextFactory,
+        ProtectedLocalStorage protectedLocalStorage,
+        CustomAuthenticationStateProvider authStateProvider)
     {
         _contextFactory = contextFactory;
         _protectedLocalStorage = protectedLocalStorage;
-        _ = InitializeUserAsync(); // Initialize on service creation
+        _authStateProvider = authStateProvider;
     }
 
-    private async Task InitializeUserAsync()
+    // Call this method when you actually need to initialize (e.g., after render)
+    public async Task InitializeAsync()
     {
+        if (_isInitialized) return;
+
         try
         {
-            // Try to get user from local storage on service initialization
+            // Try to get user from local storage
             var storedUser = await _protectedLocalStorage.GetAsync<User>("currentUser");
             if (storedUser.Success && storedUser.Value != null)
             {
                 currentUser = storedUser.Value;
+                await _authStateProvider.MarkUserAsAuthenticated(currentUser);
                 OnUserChanged?.Invoke();
             }
+        }
+        catch (InvalidOperationException)
+        {
+            // Ignore during prerendering
         }
         catch (CryptographicException)
         {
             // Local storage might be encrypted with different key, ignore
             await _protectedLocalStorage.DeleteAsync("currentUser");
+        }
+        finally
+        {
+            _isInitialized = true;
         }
     }
 
@@ -58,20 +72,39 @@ public class UserService
         if (user.Password == password)
         {
             currentUser = user;
-            await _protectedLocalStorage.SetAsync("currentUser", user);
-            OnUserChanged?.Invoke();
-            return user;
+            try
+            {
+                await _protectedLocalStorage.SetAsync("currentUser", user);
+                await _authStateProvider.MarkUserAsAuthenticated(user);
+                OnUserChanged?.Invoke();
+                return user;
+            }
+            catch (InvalidOperationException)
+            {
+                // Ignore during prerendering, but still set the user
+                currentUser = user;
+                await _authStateProvider.MarkUserAsAuthenticated(user);
+                OnUserChanged?.Invoke();
+                return user;
+            }
         }
 
         return null;
     }
 
-    public void Logout()
+    public async Task Logout()
     {
         currentUser = null;
-        _protectedLocalStorage.DeleteAsync("currentUser");
+        try
+        {
+            await _protectedLocalStorage.DeleteAsync("currentUser");
+        }
+        catch (InvalidOperationException)
+        {
+            // Ignore during prerendering
+        }
+        await _authStateProvider.MarkUserAsLoggedOut();
         OnUserChanged?.Invoke();
-        
     }
 
     public async Task<List<User>> GetUsersAsync()
@@ -102,7 +135,6 @@ public class UserService
         await context.SaveChangesAsync();
     }
 
-    // to get the current user logged in
     public async Task<User?> GetCurrentUserAsync(ClaimsPrincipal principal)
     {
         if (principal?.Identity?.IsAuthenticated != true)

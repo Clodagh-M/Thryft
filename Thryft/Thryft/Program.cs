@@ -1,9 +1,10 @@
-using Thryft.Components;
-using MudBlazor.Services;
-using Thryft.Models;
-using Microsoft.EntityFrameworkCore.Internal;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Internal;
+using MudBlazor.Services;
+using Thryft.Components;
 using Thryft.Data;
+using Thryft.Models;
 using Thryft.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,23 +13,28 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+// Add MudBlazor
 builder.Services.AddMudServices();
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+// Add Authentication & Authorization
+builder.Services.AddAuthorizationCore();
+builder.Services.AddCascadingAuthenticationState();
 
-
-//builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
-//    options.UseSqlite(connectionString));
-
-builder.Services.AddDbContextFactory<AppDbContext>(options =>
-    options.UseSqlite("Data Source=app.db"));
+// Register services
+builder.Services.AddScoped<CustomAuthenticationStateProvider>();
+builder.Services.AddScoped<AuthenticationStateProvider>(provider =>
+    provider.GetRequiredService<CustomAuthenticationStateProvider>());
 
 builder.Services.AddScoped<UserService>();
-builder.Services.AddScoped<ProductService>();
+builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<CartService>();
-builder.Services.AddScoped<ProductIconService>();
 builder.Services.AddScoped<OrderService>();
-builder.Services.AddScoped<InventoryService>();
+builder.Services.AddScoped<ProductService>();
+builder.Services.AddScoped<ProductIconService>();
+
+// Database context
+builder.Services.AddDbContextFactory<AppDbContext>(options =>
+    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 
 var app = builder.Build();
