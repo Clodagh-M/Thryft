@@ -13,6 +13,9 @@ public class UserService
 
     public User currentUser;
 
+    // Add event to notify when user changes
+    public event Action OnUserChanged;
+
     public UserService(IDbContextFactory<AppDbContext> contextFactory)
     {
         _contextFactory = contextFactory;
@@ -44,9 +47,20 @@ public class UserService
         //string enteredPasswordHash = HashPassword(password);
 
         if (user.Password == password)
+        {
+            currentUser = user;
+            OnUserChanged?.Invoke(); // Notify subscribers
             return user;
+        }
 
         return null;
+    }
+
+    // Add logout method
+    public void Logout()
+    {
+        currentUser = null;
+        OnUserChanged?.Invoke(); // Notify subscribers
     }
 
     private string HashPassword(string password)
@@ -62,14 +76,16 @@ public class UserService
         using var context = _contextFactory.CreateDbContext();
         context.Users.Add(user);
         await context.SaveChangesAsync();
+
+        currentUser = user;
+        OnUserChanged?.Invoke(); // Notify subscribers
     }
 
-    // to get the current user logged in
     public async Task<User?> GetCurrentUserAsync(ClaimsPrincipal principal)
     {
         if (principal?.Identity?.IsAuthenticated != true)
             return null;
-        
+
         var email = principal.FindFirst(ClaimTypes.Email)?.Value
                     ?? principal.Identity?.Name;
 
