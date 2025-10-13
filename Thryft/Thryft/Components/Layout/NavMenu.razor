@@ -43,11 +43,10 @@
         // Subscribe to cart updates so the badge updates in real-time
         cartService.OnCartUpdated += StateHasChanged;
 
-        // Subscribe to user changes
-        userService.OnUserChanged += OnUserChanged;
-
         // Initialize user after userService is available
         user = userService.currentUser;
+        
+        userService.OnUserChanged += OnUserChanged;
 
         StateHasChanged();
     }
