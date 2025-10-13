@@ -1,11 +1,9 @@
 ﻿@page "/"
-
 @using Thryft.Models
 @using Thryft.Services
 @inject UserService userService
 @inject NavigationManager navigationManager
 @using System.ComponentModel.DataAnnotations
-
 
 <PageTitle>Register</PageTitle>
 
@@ -40,8 +38,6 @@
     {
         navigationManager.NavigateTo("/login", forceLoad: true);
     }
-    RegisterAccountForm model = new RegisterAccountForm();
-    bool success;
 
     public class RegisterAccountForm
     {
