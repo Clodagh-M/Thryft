@@ -12,38 +12,50 @@
     @* <MudIconButton Color="Color.Tertiary" Icon="@Icons.Material.Filled.Menu" Href="">Filter</MudIconButton> *@
     <MudSpacer />
     <MudText @onclick="NavigateToHome">thryft</MudText>
-    <MudSpacer/>
-    <MudText Class="pe-1">Welcome @user.Name</MudText>
-    <MudBadge Color="Color.Dark" Content="@cartService.CurrentCart.TotalItems" Max="99">
-        <MudIconButton Icon="@Icons.Material.Filled.ShoppingCart"
-                       Href="/cart"
-                       Color="Color.Tertiary" />
-    </MudBadge>
-    <MudMenu Color="Color.Tertiary" Class="ms-4" Icon="@Icons.Material.Filled.Person" Style="z-index: 15000">
-        <MudMenuItem Onclick="NavigateToProfile">Profile</MudMenuItem>
-        <MudMenuItem Onclick="NavigateToOrders">Orders</MudMenuItem>
-        <MudDivider/>
-        <MudMenuItem Href="/">Logout</MudMenuItem>
-    </MudMenu>
+    <MudSpacer />
+    @if (user == null)
+    {
+        <MudButton Variant="Variant.Text" Color="Color.Tertiary" Href="/login">Login</MudButton>
+    }
+    else
+    {
+        <MudText Class="pe-1">Welcome @user.Name</MudText>
+
+        <MudBadge Color="Color.Dark" Content="@cartService.CurrentCart.TotalItems" Max="99">
+            <MudIconButton Icon="@Icons.Material.Filled.ShoppingCart"
+                           Href="/cart"
+                           Color="Color.Tertiary" />
+        </MudBadge>
+        <MudMenu Color="Color.Tertiary" Class="ms-4" Icon="@Icons.Material.Filled.Person" Style="z-index: 15000">
+            <MudMenuItem Onclick="NavigateToProfile">Profile</MudMenuItem>
+            <MudMenuItem Onclick="NavigateToOrders">Orders</MudMenuItem>
+            <MudDivider />
+            <MudMenuItem Onclick="HandleLogout">Logout</MudMenuItem>
+        </MudMenu>
+    }
 </MudAppBar>
 
 @code {
-    // private User user = userService.currentUser;
-
-    private User user = new User
-    {
-        UserId = 4,
-        Name = "TEST USER",
-        Email = "test@test.com",
-        Password = "Test"
-    };
+    private User user;
 
     protected override void OnInitialized()
     {
         // Subscribe to cart updates so the badge updates in real-time
         cartService.OnCartUpdated += StateHasChanged;
 
+        // Subscribe to user changes
+        userService.OnUserChanged += OnUserChanged;
 
+        // Initialize user after userService is available
+        user = userService.currentUser;
+
+        StateHasChanged();
+    }
+
+    private void OnUserChanged()
+    {
+        user = userService.currentUser;
+        StateHasChanged();
     }
 
     private void NavigateToHome()
@@ -66,9 +78,16 @@
         Navigation.NavigateTo("/orders");
     }
 
+    private void HandleLogout()
+    {
+        userService.Logout();
+        Navigation.NavigateTo("/");
+    }
+
     public void Dispose()
     {
         // Important: Unsubscribe to prevent memory leaks
         cartService.OnCartUpdated -= StateHasChanged;
+        userService.OnUserChanged -= OnUserChanged;
     }
 }
