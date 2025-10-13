@@ -29,7 +29,7 @@ builder.Services.AddScoped<CartService>();
 builder.Services.AddScoped<ProductIconService>();
 builder.Services.AddScoped<OrderService>();
 builder.Services.AddScoped<InventoryService>();
-
+builder.Services.AddScoped<OrderService>();
 
 
 var app = builder.Build();
