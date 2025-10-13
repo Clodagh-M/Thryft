@@ -10,6 +10,7 @@
 <PageTitle>Login</PageTitle>
 
 <MudGrid>
+    <MudSpacer />
     <MudItem xs="12" sm="7">
         <MudCard Class="pa-4">
             <MudForm @ref="form">
@@ -20,16 +21,19 @@
                               Validation="@(new Func<string, IEnumerable<string>>(PasswordStrength))" Immediate="true"
                               RequiredError="Password is required!" />
             </MudForm>
-        </MudCard>
-        <MudSpacer />
+
+            <br />
         <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="HandleLogin">Login</MudButton>
-        <MudSpacer />
+
+            <br />
 
         @if (!string.IsNullOrEmpty(errorMessage))
         {
             <MudAlert Severity="Severity.Error">@errorMessage</MudAlert>
         }
+        </MudCard>
     </MudItem>
+    <MudSpacer />
 </MudGrid>
 
 @code {
