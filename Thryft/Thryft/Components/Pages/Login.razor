@@ -9,10 +9,10 @@
 
 <PageTitle>Login</PageTitle>
 
-<MudGrid>
-    <MudSpacer />
-    <MudItem xs="12" sm="7">
-        <MudCard Class="pa-4">
+<MudContainer MaxWidth="MaxWidth.Small" Class="py-16">
+    <MudCard>
+        <MudCardContent>
+            <MudText Typo="Typo.h4" Class="text-center mb-4">Login</MudText>
             <MudForm @ref="form">
                 <MudTextField T="string" Label="Email" RequiredError="Email is required!" @bind-Value="email" Immediate="true"
                               Validation="@(new EmailAddressAttribute() {ErrorMessage = "The email address is invalid"})" />
@@ -21,20 +21,40 @@
                               Validation="@(new Func<string, IEnumerable<string>>(PasswordStrength))" Immediate="true"
                               RequiredError="Password is required!" />
             </MudForm>
+        </MudCardContent>
+        <MudCardActions Class="justify-center">
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       OnClick="HandleLogin"
+                       FullWidth="true"
+                       Disabled="isLoading">
+                @if (isLoading)
+                {
+                    <MudProgressCircular Size="MudBlazor.Size.Small" Indeterminate="true" />
+                    <MudText Class="ml-2">Logging in...</MudText>
+                }
+                else
+                {
+                    <MudText>Login</MudText>
+                }
+            </MudButton>
 
-            <br />
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="HandleLogin">Login</MudButton>
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <MudAlert Severity="Severity.Error">@errorMessage</MudAlert>
+            }
+        </MudCardActions>
+        
+    </MudCard>
 
-            <br />
+    <MudCard>
 
-        @if (!string.IsNullOrEmpty(errorMessage))
-        {
-            <MudAlert Severity="Severity.Error">@errorMessage</MudAlert>
-        }
-        </MudCard>
-    </MudItem>
-    <MudSpacer />
-</MudGrid>
+        <MudText Class="text-center my-4">
+            Don't have an account? <MudLink Href="/">Register here</MudLink></MudText>
+
+    </MudCard>
+
+</MudContainer>
 
 @code {
     MudForm form;
@@ -43,8 +63,12 @@
     private string errorMessage;
     MudTextField<string> pwField;
 
+    private bool isLoading = false;
+
     private async Task HandleLogin()
     {
+        isLoading = true;
+
         await form.Validate();
 
         if (!form.IsValid)

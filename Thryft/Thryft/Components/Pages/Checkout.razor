@@ -8,6 +8,7 @@
 @inject InventoryService inventoryService
 @inject NavigationManager Navigation
 @inject ILogger<Checkout> Logger
+@inject UserService userService
 
 @rendermode InteractiveServer
 
@@ -138,10 +139,10 @@
                      Color="Color.Success"
                      Class="mb-3" />
             <MudText Typo="Typo.h4" Class="mb-3">Order Confirmed!</MudText>
-            <MudText Typo="Typo.body1" Color="Color.Secondary" Class="mb-2">
+            <MudText Typo="Typo.body1" Color="Color.Info" Class="mb-2">
                 Thank you for your purchase, @_shippingInfo.Name!
             </MudText>
-            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+            <MudText Typo="Typo.body2" Color="Color.Info" Class="mb-4">
                 Your order has been processed successfully. Order ID: #@_orderId
             </MudText>
             <MudButton Variant="Variant.Filled"
@@ -161,7 +162,9 @@
     private string? _errorMessage;
     private string _orderId = Guid.NewGuid().ToString()[..8].ToUpper();
 
-    private int _currentUserId = 1;
+    private User user;
+
+    private int _currentUserId;
 
     private ShippingInfo _shippingInfo = new();
     private PaymentInfo _paymentInfo = new();
@@ -171,6 +174,13 @@
 
     protected override async Task OnInitializedAsync()
     {
+        userService.OnUserChanged += OnUserChanged;
+
+        // Initialize user after userService is available
+        user = userService.currentUser;
+
+        _currentUserId = user?.UserId ?? 0;
+
         // Add a small delay to ensure the cart service is properly initialized
         // if (!cartService.CurrentCart.Items.Any())
         // {
@@ -200,6 +210,12 @@
                 _currentUserId = userId;
             }
         }
+    }
+
+    private void OnUserChanged()
+    {
+        user = userService.currentUser;
+        StateHasChanged();
     }
 
     private async Task ProcessOrder()
@@ -311,7 +327,7 @@
                 UserId = _currentUserId,
                 Total = _totalAmount,
                 Created = DateTime.UtcNow,
-                Status = "Completed",
+                Status = "Processing",
                 OrderItems = cartService.CurrentCart.Items.Select(item => new OrderItem
                 {
                     ProductId = item.ProductId,

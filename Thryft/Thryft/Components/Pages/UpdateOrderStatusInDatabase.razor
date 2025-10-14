@@ -139,7 +139,7 @@
                         <MudGrid>
                             <MudItem xs="12" sm="6" md="3">
                                 <MudSelect T="string" Label="Status Filter" @bind-Value="_statusFilter" Variant="Variant.Outlined">
-                                    <MudSelectItem Value="@string.Empty">All Statuses</MudSelectItem>
+                                    <MudSelectItem Value="@STATUS_ALL">All Statuses</MudSelectItem>
                                     <MudSelectItem Value="@STATUS_PROCESSING">Processing</MudSelectItem>
                                     <MudSelectItem Value="@STATUS_SHIPPED">Shipped</MudSelectItem>
                                     <MudSelectItem Value="@STATUS_COMPLETED">Completed</MudSelectItem>
@@ -162,7 +162,7 @@
                             </MudItem>
                             <MudItem xs="12" sm="6" md="3" Class="d-flex align-end">
                                 <MudButton Variant="Variant.Outlined"
-                                           Color="Color.Secondary"
+                                           Color="Color.Info"
                                            OnClick="ClearFilters"
                                            FullWidth="true">
                                     Clear Filters
@@ -188,7 +188,7 @@
                                                     <MudText Typo="Typo.caption" Color="Color.Primary">
                                                         Placed on @order.Created.ToString("MMMM dd, yyyy 'at' h:mm tt")
                                                     </MudText>
-                                                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                                    <MudText Typo="Typo.caption" Color="Color.Info">
                                                         User ID: @order.UserId
                                                     </MudText>
                                                 </div>
@@ -255,7 +255,7 @@
                                         @if (order.OrderItems.Count > 2)
                                         {
                                             <div class="px-4 py-2">
-                                                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                                <MudText Typo="Typo.caption" Color="Color.Info">
                                                     + @(order.OrderItems.Count - 2) more items
                                                 </MudText>
                                             </div>
@@ -271,7 +271,7 @@
                             <MudCardContent>
                                 <MudIcon Icon="@Icons.Material.Filled.Inventory2"
                                          Size="MudBlazor.Size.Large"
-                                         Color="Color.Secondary"
+                                         Color="Color.Info"
                                          Class="mb-3" />
                                 <MudText Typo="Typo.h5" Class="mb-2">No Orders Found</MudText>
                                 <MudText Typo="Typo.body1" Color="Color.Primary" Class="mb-4">
@@ -385,7 +385,7 @@
                             <MudCardContent>
                                 <MudIcon Icon="@Icons.Material.Filled.PointOfSale"
                                          Size="MudBlazor.Size.Large"
-                                         Color="Color.Secondary"
+                                         Color="Color.Info"
                                          Class="mb-3" />
                                 <MudText Typo="Typo.h6" Class="mb-2">Select an Order</MudText>
                                 <MudText Typo="Typo.body2" Color="Color.Primary">
@@ -447,6 +447,8 @@
     private bool _isUpdating = false;
     private bool _showSuccessDialog = false;
 
+
+    private const string STATUS_ALL = "";
     private const string STATUS_PROCESSING = "Processing";
     private const string STATUS_SHIPPED = "Shipped";
     private const string STATUS_COMPLETED = "Completed";
@@ -616,9 +618,9 @@
         {
             var s when s == STATUS_COMPLETED.ToLower() => "mud-theme-success",
             var s when s == STATUS_PROCESSING.ToLower() => "mud-theme-warning",
-            var s when s == STATUS_SHIPPED.ToLower() => "mud-theme-info",
+            var s when s == STATUS_SHIPPED.ToLower() => "mud-theme-secondary",
             var s when s == STATUS_CANCELLED.ToLower() => "mud-theme-error",
-            _ => "mud-theme-secondary"
+            _ => "mud-theme-info"
         };
     }
 
