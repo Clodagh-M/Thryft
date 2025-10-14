@@ -4,6 +4,7 @@
 @using Thryft.Services
 @inject UserService userService
 @inject NavigationManager navigationManager
+@inject AuthService authService
 @rendermode InteractiveServer
 
 <PageTitle>Register</PageTitle>
@@ -76,6 +77,11 @@
     private RegisterAccountForm model = new();
     private bool success;
     private string message = "";
+
+    private async Task OnInitializedAsync()
+    {
+        await authService.LogoutAsync();
+    }
 
     private async Task HandleValidSubmit()
     {

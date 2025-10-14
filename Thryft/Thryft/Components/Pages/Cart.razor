@@ -7,6 +7,7 @@
 @inject CartService cartService
 @inject NavigationManager Navigation
 @inject ProductIconService productIconService
+@inject ProductService productService
 
 @rendermode InteractiveServer
 
@@ -165,9 +166,15 @@
 </AuthorizeView>
 
 @code {
-    protected override void OnInitialized()
+
+    private List<Product> allProducts = new List<Product>();
+
+    protected override async Task OnInitializedAsync()
     {
         cartService.OnCartUpdated += StateHasChanged;
+
+        allProducts = await productService.GetProductsAsync() ?? new List<Product>();
+
         StateHasChanged();
     }
 
@@ -178,9 +185,9 @@
 
     private string GetProductCategory(int productId)
     {
-        // You might need to get the actual product category from your data
-        // For now, return a default or implement based on your data structure
-        return "clothing"; // Replace with actual category lookup
+        // Find the product and return its actual category
+        var product = allProducts.FirstOrDefault(p => p.ProductId == productId);
+        return product?.Category ?? "clothing"; // Default fallback
     }
 
     private void IncreaseQuantity(CartItem item)

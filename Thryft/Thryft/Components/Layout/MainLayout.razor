@@ -9,6 +9,11 @@
 <MudSnackbarProvider />
 
 <style>
+    .content {
+        padding-top: 1.1rem;
+        height: fit-content;
+    }
+
     .page-with-bg {
         position: relative;
         min-height: 100vh;
@@ -33,6 +38,22 @@
         position: relative;
         z-index: 1;
     }
+
+    .website-footer {
+        position: absolute;
+        width: 100vw;
+        background: #ed9191;
+        color: white;
+        padding: 3rem 0 2rem;
+        margin-top: 4rem;
+    }
+
+    .footer-content {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 2rem;
+    }
+
 </style>
 
 <div class="page-with-bg">
@@ -47,6 +68,35 @@
             <article class="content px-4 mt-4">
                 @Body
             </article>
+            <!-- Website Footer -->
+            <div class="website-footer">
+                <div class="footer-content">
+                    <MudGrid Spacing="4">
+                        <MudItem xs="12" md="4">
+                            <MudText Typo="Typo.h6" Class="mb-3" Style="font-weight: 600;">Thryft</MudText>
+                            <MudText Typo="Typo.body2" Class="mb-2">Premium online shopping experience</MudText>
+                            <MudText Typo="Typo.body2">Your trusted partner for quality products</MudText>
+                        </MudItem>
+                        <MudItem xs="12" md="4">
+                            @* <MudText Typo="Typo.h6" Class="mb-3" Style="font-weight: 600;">Quick Links</MudText>
+                            <MudLink Color="Color.Tertiary" Typo="Typo.body2" OnClick="GoToHome" Class="mb-1">Products</MudLink>
+                            <br />
+                            <MudLink Color="Color.Tertiary" Typo="Typo.body2" OnClick="GoToCart" Class="mb-1">Cart</MudLink>
+                            <br />
+                            <MudLink Color="Color.Tertiary" Typo="Typo.body2" OnClick="GoToOrders" Class="mb-1">Orders</MudLink> *@
+                        </MudItem>
+                        <MudItem xs="12" md="4">
+                            <MudText Typo="Typo.h6" Class="mb-3" Style="font-weight: 600;">Contact</MudText>
+                            <MudText Typo="Typo.body2" Class="mb-1">support@thryft.com</MudText>
+                            <MudText Typo="Typo.body2" Class="mb-1">012 345 6789</MudText>
+                        </MudItem>
+                    </MudGrid>
+                    <MudDivider Class="my-4" Color="Color.Dark" />
+                    <MudText Typo="Typo.caption" Class="text-center">
+                        © 2025 Thryft. All rights reserved.
+                    </MudText>
+                </div>
+            </div>
         </main>
     </div>
 </div>
@@ -78,6 +128,21 @@
             await AuthService.InitializeAsync();
             StateHasChanged();
         }
+    }
+
+    private void GoToHome()
+    {
+        Navigation.NavigateTo("/home");
+    }
+
+    private void GoToCart()
+    {
+        Navigation.NavigateTo("/cart");
+    }
+
+    private void GoToOrders()
+    {
+        Navigation.NavigateTo("/orders");
     }
 
     private async Task Logout()
