@@ -10,19 +10,22 @@
 <MudPopoverProvider />
 
 <MudAppBar Class="py-2" Style="z-index: 1300 !important;">
-    @* <MudIconButton Color="Color.Tertiary" Icon="@Icons.Material.Filled.Menu" Href="">Filter</MudIconButton> *@
-    <MudSpacer />
-    <MudText @onclick="NavigateToHome">thryft</MudText>
-    <MudSpacer />
     @if (user == null)
     {
+        <MudSpacer />
+        <MudText @onclick="NavigateToHome">thryft</MudText>
+        <MudSpacer />
         <MudButton Variant="Variant.Text" Color="Color.Tertiary" Href="/login">Login</MudButton>
     }
     else
     {
+        <MudIconButton Color="Color.Tertiary" Icon="@Icons.Material.Filled.Home" OnClick="NavigateToHome"></MudIconButton>
+        <MudSpacer />
+        <MudText @onclick="NavigateToHome">thryft</MudText>
+        <MudSpacer />
         <MudText Class="pe-1"><b>Welcome</b> @GetFirstName(user.Name)</MudText>
 
-        <MudBadge Color="Color.Dark" Content="@cartService.CurrentCart.TotalItems" Max="99">
+        <MudBadge Overlap="true" Color="Color.Dark" Content="@cartService.CurrentCart.TotalItems" Max="99">
             <MudIconButton Icon="@Icons.Material.Filled.ShoppingCart"
                            Href="/cart"
                            Color="Color.Tertiary" />

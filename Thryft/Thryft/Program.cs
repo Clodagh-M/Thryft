@@ -31,6 +31,7 @@ builder.Services.AddScoped<CartService>();
 builder.Services.AddScoped<OrderService>();
 builder.Services.AddScoped<ProductService>();
 builder.Services.AddScoped<ProductIconService>();
+builder.Services.AddScoped<InventoryService>();
 
 // Database context
 builder.Services.AddDbContextFactory<AppDbContext>(options =>
