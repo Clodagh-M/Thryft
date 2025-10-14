@@ -13,6 +13,10 @@
 <MudContainer MaxWidth="MaxWidth.Medium" Class="mt-10 d-flex justify-center">
     <MudCard Class="pa-6" Style="text-align:center;">
 
+        <div class="d-flex justify-center">
+            <img src="images/thryft-profile-icon.png" alt="Profile Icon" width="100" class="mb-4" />
+        </div>
+
         <MudText Typo="Typo.h5" Class="mb-4">Your Profile</MudText>
 
         @if (user is not null)
@@ -23,7 +27,7 @@
         else
         {
             <MudText Typo="Typo.body1" Color="Color.Secondary">
-                No user information available.
+                Please Login to see your profile details.
             </MudText>
         }
 
@@ -35,16 +39,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-
-        // testing
-        user = new User
-        {
-            Name = "Demo User",
-            Email = "demo@gmail.com"
-        };
-
-        // to get the actual logged in user:
-        // var state = await authStateProvider.GetAuthenticationStateAsync();
-        // user = await userService.GetCurrentUserAsync(state.User);
+        var state = await authStateProvider.GetAuthenticationStateAsync();
+        user = await userService.GetCurrentUserAsync(state.User);
     }
 }
