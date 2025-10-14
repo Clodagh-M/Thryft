@@ -26,14 +26,14 @@
         cursor: pointer;
     }
 
-    .order-card:hover {
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-    }
+        .order-card:hover {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
 
-    .order-card.selected {
-        border: 2px solid var(--mud-palette-primary);
-        background-color: rgba(var(--mud-palette-primary-rgb), 0.04);
-    }
+        .order-card.selected {
+            border: 2px solid var(--mud-palette-primary);
+            background-color: rgba(var(--mud-palette-primary-rgb), 0.04);
+        }
 
     .order-header {
         background-color: #f8f9fa;
@@ -45,9 +45,9 @@
         padding: 16px 0;
     }
 
-    .order-item:last-child {
-        border-bottom: none;
-    }
+        .order-item:last-child {
+            border-bottom: none;
+        }
 
     .product-icon-container {
         width: 60px;
@@ -208,55 +208,73 @@
 
                                     <!-- Order Items -->
                                     <MudCardContent Class="pa-0">
-                                        @foreach (var item in order.OrderItems.Take(2))
+                                        @if (order.OrderItems != null && order.OrderItems.Any())
                                         {
-                                            <div class="order-item px-4">
-                                                <MudGrid>
-                                                    <MudItem xs="12" sm="1" Class="d-flex align-center">
-                                                        <div class="product-icon-container">
-                                                            <i class="@productIconService.GetProductIcon(GetProductCategory(item.ProductId), item.SelectedColour)"
-                                                               style="@productIconService.GetColorStyle(item.SelectedColour) font-size: 24px;"></i>
-                                                        </div>
-                                                    </MudItem>
-                                                    <MudItem xs="12" sm="5">
-                                                        <div class="d-flex flex-column">
-                                                            <MudText Typo="Typo.subtitle1" Class="mb-1">
-                                                                @GetProductName(item.ProductId)
-                                                            </MudText>
-                                                            <div class="d-flex gap-2">
-                                                                @if (item.SelectedColour.HasValue)
+                                            @foreach (var item in order.OrderItems.Take(2))
+                                            {
+                                                <div class="order-item px-4">
+                                                    <MudGrid>
+                                                        <MudItem xs="12" sm="1" Class="d-flex align-center">
+                                                            <div class="product-icon-container">
+                                                                @if (_productDetails.ContainsKey(item.ProductId))
                                                                 {
-                                                                    <MudText Typo="Typo.caption" Color="Color.Primary">
-                                                                        Color: @item.SelectedColour.Value
-                                                                    </MudText>
+                                                                    <i class="@GetProductIcon(_productDetails[item.ProductId].Category, item.SelectedColour)"
+                                                                       style="@GetColorStyle(item.SelectedColour) font-size: 24px;"></i>
                                                                 }
-                                                                @if (item.SelectedSize.HasValue)
+                                                                else
                                                                 {
-                                                                    <MudText Typo="Typo.caption" Color="Color.Primary">
-                                                                        Size: @item.SelectedSize.Value
-                                                                    </MudText>
+                                                                    <i class="@Icons.Material.Filled.QuestionMark" style="font-size: 24px; color: #999;"></i>
                                                                 }
                                                             </div>
-                                                        </div>
-                                                    </MudItem>
-                                                    <MudItem xs="6" sm="3" Class="d-flex align-center">
-                                                        <MudText Typo="Typo.body1">
-                                                            Qty: @item.Quantity
-                                                        </MudText>
-                                                    </MudItem>
-                                                    <MudItem xs="6" sm="3" Class="d-flex align-center justify-end">
-                                                        <MudText Typo="Typo.subtitle1" Color="Color.Primary">
-                                                            €@(item.UnitPrice * item.Quantity)
-                                                        </MudText>
-                                                    </MudItem>
-                                                </MudGrid>
-                                            </div>
+                                                        </MudItem>
+                                                        <MudItem xs="12" sm="5">
+                                                            <div class="d-flex flex-column">
+                                                                <MudText Typo="Typo.subtitle1" Class="mb-1">
+                                                                    @GetProductName(item.ProductId)
+                                                                </MudText>
+                                                                <div class="d-flex gap-2">
+                                                                    @if (item.SelectedColour.HasValue)
+                                                                    {
+                                                                        <MudText Typo="Typo.caption" Color="Color.Primary">
+                                                                            Color: @item.SelectedColour.Value.ToString()
+                                                                        </MudText>
+                                                                    }
+                                                                    @if (item.SelectedSize.HasValue)
+                                                                    {
+                                                                        <MudText Typo="Typo.caption" Color="Color.Primary">
+                                                                            Size: @item.SelectedSize.Value.ToString()
+                                                                        </MudText>
+                                                                    }
+                                                                </div>
+                                                            </div>
+                                                        </MudItem>
+                                                        <MudItem xs="6" sm="3" Class="d-flex align-center">
+                                                            <MudText Typo="Typo.body1">
+                                                                Qty: @item.Quantity
+                                                            </MudText>
+                                                        </MudItem>
+                                                        <MudItem xs="6" sm="3" Class="d-flex align-center justify-end">
+                                                            <MudText Typo="Typo.subtitle1" Color="Color.Primary">
+                                                                €@((item.UnitPrice * item.Quantity).ToString("F2"))
+                                                            </MudText>
+                                                        </MudItem>
+                                                    </MudGrid>
+                                                </div>
+                                            }
+                                            @if (order.OrderItems.Count > 2)
+                                            {
+                                                <div class="px-4 py-2">
+                                                    <MudText Typo="Typo.caption" Color="Color.Info">
+                                                        + @(order.OrderItems.Count - 2) more items
+                                                    </MudText>
+                                                </div>
+                                            }
                                         }
-                                        @if (order.OrderItems.Count > 2)
+                                        else
                                         {
-                                            <div class="px-4 py-2">
-                                                <MudText Typo="Typo.caption" Color="Color.Info">
-                                                    + @(order.OrderItems.Count - 2) more items
+                                            <div class="px-4 py-3 text-center">
+                                                <MudText Typo="Typo.caption" Color="Color.Warning">
+                                                    Click on order to see items
                                                 </MudText>
                                             </div>
                                         }
@@ -363,17 +381,28 @@
 
                                 <!-- Order Items Summary -->
                                 <div>
-                                    <MudText Typo="Typo.subtitle2" Color="Color.Primary" Class="mb-2">Items (@_selectedOrder.OrderItems.Count)</MudText>
-                                    @foreach (var item in _selectedOrder.OrderItems)
+                                    <MudText Typo="Typo.subtitle2" Color="Color.Primary" Class="mb-2">
+                                        Items (@(_selectedOrder.OrderItems?.Count ?? 0))
+                                    </MudText>
+                                    @if (_selectedOrder.OrderItems != null && _selectedOrder.OrderItems.Any())
                                     {
-                                        <div class="d-flex justify-space-between align-center py-1">
-                                            <MudText Typo="Typo.caption">
-                                                @GetProductName(item.ProductId) × @item.Quantity
-                                            </MudText>
-                                            <MudText Typo="Typo.caption" Color="Color.Primary">
-                                                €@(item.UnitPrice * item.Quantity)
-                                            </MudText>
-                                        </div>
+                                        @foreach (var item in _selectedOrder.OrderItems)
+                                        {
+                                            <div class="d-flex justify-space-between align-center py-1">
+                                                <MudText Typo="Typo.caption">
+                                                    @GetProductName(item.ProductId) × @item.Quantity
+                                                </MudText>
+                                                <MudText Typo="Typo.caption" Color="Color.Primary">
+                                                    €@((item.UnitPrice * item.Quantity).ToString("F2"))
+                                                </MudText>
+                                            </div>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <MudText Typo="Typo.caption" Color="Color.Warning" Class="text-center">
+                                            No items found
+                                        </MudText>
                                     }
                                 </div>
                             </MudCardContent>
@@ -437,8 +466,7 @@
     private List<Order> _orders = new List<Order>();
     private List<Order> _filteredOrders = new List<Order>();
     private Order? _selectedOrder = null;
-    private Dictionary<int, string> _productNames = new Dictionary<int, string>();
-    private Dictionary<int, string> _productCategories = new Dictionary<int, string>();
+    private Dictionary<int, ProductDetail> _productDetails = new Dictionary<int, ProductDetail>();
     
     // Filter and search state
     private string _statusFilter = "";
@@ -446,7 +474,6 @@
     private string _sortBy = "newest";
     private bool _isUpdating = false;
     private bool _showSuccessDialog = false;
-
 
     private const string STATUS_ALL = "";
     private const string STATUS_PROCESSING = "Processing";
@@ -457,6 +484,13 @@
     private const string SORT_NEWEST = "newest";
     private const string SORT_OLDEST = "oldest";
     private const string SORT_TOTAL = "total";
+
+    // Product detail class to hold product information
+    private class ProductDetail
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Category { get; set; } = string.Empty;
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -469,6 +503,21 @@
         {
             // Get all orders (admin access)
             _orders = await orderService.GetAllOrdersAsync() ?? new List<Order>();
+            
+            // Debug: Check if orders have items
+            Console.WriteLine($"Loaded {_orders.Count} orders");
+            foreach (var order in _orders)
+            {
+                Console.WriteLine($"Order {order.OrderId} has {order.OrderItems?.Count ?? 0} items");
+                if (order.OrderItems != null)
+                {
+                    foreach (var item in order.OrderItems)
+                    {
+                        Console.WriteLine($"  - Product ID: {item.ProductId}, Quantity: {item.Quantity}");
+                    }
+                }
+            }
+            
             await LoadProductDetails();
             ApplyFilters();
         }
@@ -483,23 +532,36 @@
         try
         {
             var allProducts = await productService.GetProductsAsync();
+            Console.WriteLine($"Loaded {allProducts?.Count ?? 0} products");
 
+            if (allProducts != null)
+            {
+                foreach (var product in allProducts)
+                {
+                    Console.WriteLine($"Product ID: {product.ProductId}, Name: {product.ProductName}, Category: {product.Category}");
+                    _productDetails[product.ProductId] = new ProductDetail
+                    {
+                        Name = product.ProductName ?? $"Product #{product.ProductId}",
+                        Category = product.Category ?? "clothing"
+                    };
+                }
+            }
+
+            // Verify we have details for all products in orders
             foreach (var order in _orders)
             {
-                foreach (var item in order.OrderItems)
+                if (order.OrderItems != null)
                 {
-                    if (!_productNames.ContainsKey(item.ProductId))
+                    foreach (var item in order.OrderItems)
                     {
-                        var product = allProducts.FirstOrDefault(p => p.ProductId == item.ProductId);
-                        if (product != null)
+                        if (!_productDetails.ContainsKey(item.ProductId))
                         {
-                            _productNames[item.ProductId] = product.ProductName;
-                            _productCategories[item.ProductId] = product.Category;
-                        }
-                        else
-                        {
-                            _productNames[item.ProductId] = $"Product #{item.ProductId}";
-                            _productCategories[item.ProductId] = "clothing";
+                            Console.WriteLine($"Warning: No product details found for Product ID: {item.ProductId}");
+                            _productDetails[item.ProductId] = new ProductDetail
+                            {
+                                Name = $"Product #{item.ProductId}",
+                                Category = "clothing"
+                            };
                         }
                     }
                 }
@@ -541,10 +603,41 @@
         StateHasChanged();
     }
 
-    private void SelectOrder(Order order)
+    private async void SelectOrder(Order order)
     {
-        _selectedOrder = order;
-        StateHasChanged();
+        try
+        {
+            // Load the full order details with items
+            var fullOrder = await orderService.GetOrderByIdAsync(order.OrderId);
+            
+            if (fullOrder != null)
+            {
+                _selectedOrder = fullOrder;
+                
+                // Debug: Check if we got items
+                Console.WriteLine($"Selected order {_selectedOrder.OrderId} has {_selectedOrder.OrderItems?.Count ?? 0} items");
+                if (_selectedOrder.OrderItems != null)
+                {
+                    foreach (var item in _selectedOrder.OrderItems)
+                    {
+                        Console.WriteLine($"  - Product ID: {item.ProductId}, Name: {GetProductName(item.ProductId)}");
+                    }
+                }
+            }
+            else
+            {
+                _selectedOrder = order;
+                Console.WriteLine($"Could not load full details for order {order.OrderId}, using basic order data");
+            }
+            
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error selecting order: {ex.Message}");
+            _selectedOrder = order; // Fallback to basic order data
+            StateHasChanged();
+        }
     }
 
     private async Task UpdateOrderStatus()
@@ -564,6 +657,16 @@
                 _showSuccessDialog = true;
                 // Refresh the orders to reflect the change
                 await LoadOrders();
+                
+                // Also refresh the selected order
+                if (_selectedOrder != null)
+                {
+                    var updatedOrder = await orderService.GetOrderByIdAsync(_selectedOrder.OrderId);
+                    if (updatedOrder != null)
+                    {
+                        _selectedOrder = updatedOrder;
+                    }
+                }
             }
         }
         catch (Exception ex)
@@ -581,6 +684,7 @@
     private async Task RefreshOrders()
     {
         await LoadOrders();
+        _selectedOrder = null; // Clear selection on refresh
     }
 
     private string GetOrderCardClass(Order order)
@@ -604,12 +708,21 @@
 
     private string GetProductName(int productId)
     {
-        return _productNames.ContainsKey(productId) ? _productNames[productId] : $"Product #{productId}";
+        return _productDetails.ContainsKey(productId) ? _productDetails[productId].Name : $"Product #{productId}";
     }
 
-    private string GetProductCategory(int productId)
+    private string GetProductIcon(string category, Colour? colour)
     {
-        return _productCategories.ContainsKey(productId) ? _productCategories[productId] : "clothing";
+        // Convert Colour enum to string for the ProductIconService
+        string colourString = colour?.ToString() ?? string.Empty;
+        return productIconService.GetProductIcon(category, colour);
+    }
+
+    private string GetColorStyle(Colour? colour)
+    {
+        // Convert Colour enum to string for the ProductIconService
+        string colourString = colour?.ToString() ?? string.Empty;
+        return productIconService.GetColorStyle(colour);
     }
 
     private string GetStatusClass(string status)
