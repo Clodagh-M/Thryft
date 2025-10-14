@@ -16,6 +16,11 @@ public enum Colour
     Navy,
     Teal,
     Maroon,
-    Beige
+    Beige,
+    Gold,
+    Assorted,
+    Silver,
+    RoseGold, 
+    Multicolour
 
 }

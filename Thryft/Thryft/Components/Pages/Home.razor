@@ -547,12 +547,18 @@
                                                 <MudButton Variant="Variant.Text"
                                                            Size="MudBlazor.Size.Small"
                                                            Color="Color.Primary">
-                                                    Colours @(GetSelectedColor(product.ProductId) != null ? "✓" : "")
+                                                    Colours 
                                                 </MudButton>
                                                 @if (GetSelectedColor(product.ProductId) == null)
                                                 {
                                                     <MudText Typo="Typo.caption" Color="Color.Warning" Class="ml-1">
                                                         (Required)
+                                                    </MudText>
+                                                }
+                                                else
+                                                {
+                                                    <MudText Typo="Typo.caption" Color="Color.Info" Class="ml-1">
+                                                        @string.Concat("(" + ((GetSelectedColor(product.ProductId)?.ToString()) ?? "") + ")")
                                                     </MudText>
                                                 }
                                             </div>
@@ -563,7 +569,7 @@
                                                     <MudChip T="Colour"
                                                              Value="@colour"
                                                              OnClick="@(() => SelectColor(product.ProductId, colour))"
-                                                             Variant="GetSelectedColor(product.ProductId) == colour ? Variant.Filled : Variant.Outlined"
+                                                             Variant="GetSelectedColor(product.ProductId)?.ToString() == colour.ToString() ? Variant.Filled : Variant.Outlined"
                                                              Class="@GetChipClass(product.ProductId, colour)"
                                                              Style="@GetChipStyle(colour)"
                                                              Size="MudBlazor.Size.Medium">
@@ -579,12 +585,18 @@
                                                 <MudButton Variant="Variant.Text"
                                                            Size="MudBlazor.Size.Small"
                                                            Color="Color.Primary">
-                                                    Sizes @(GetSelectedSize(product.ProductId) != null ? "✓" : "")
+                                                    Sizes 
                                                 </MudButton>
                                                 @if (GetSelectedSize(product.ProductId) == null)
                                                 {
                                                     <MudText Typo="Typo.caption" Color="Color.Warning" Class="ml-1">
                                                         (Required)
+                                                    </MudText>
+                                                }
+                                                else
+                                                {
+                                                    <MudText Typo="Typo.caption" Color="Color.Info" Class="ml-1">
+                                                        @string.Concat("(" + (GetSelectedSize(product.ProductId) != null ? (selectedSizes[product.ProductId]) : "") + ")")
                                                     </MudText>
                                                 }
                                             </div>
@@ -1172,6 +1184,11 @@ private void SetCategoryBinding(string category, bool value)
         Colour.Teal => "#39cccc",
         Colour.Maroon => "#85144b",
         Colour.Beige => "#f5f5dc",
+        Colour.Gold => "#FFD700",        
+        Colour.Silver => "#C0C0C0",      
+        Colour.RoseGold => "#B76E79",    
+        Colour.Multicolour => "#FF69B4", // Bright/fun color to represent multiple colors
+        Colour.Assorted => "#9370DB",    // Medium purple - distinct but neutral
         _ => "#ffffff"
     };
 
