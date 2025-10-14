@@ -9,6 +9,11 @@
 @inject NavigationManager Navigation
 @inject ProductService productService
 @inject UserService userService
+@inject CartService cartService
+@inject InventoryService inventoryService
+
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
 
 @rendermode InteractiveServer
 
@@ -166,14 +171,14 @@
                                     <!-- Order Actions -->
                                     <MudCardActions Class="px-4 py-3">
                                         <div class="d-flex justify-end w-100">
-                                            @if (order.Status == "Completed")
+                                            @if (order.Status == "Processing")
                                             {
                                                 <MudButton Variant="Variant.Outlined"
                                                            Color="Color.Primary"
                                                            Size="MudBlazor.Size.Small"
                                                            Class="ml-2"
-                                                           OnClick="@(() => ReorderItems(order))">
-                                                    Reorder
+                                                           OnClick="@(() => CancelOrder(order))">
+                                                    Cancel
                                                 </MudButton>
                                             }
                                         </div>
@@ -363,15 +368,35 @@
         // Navigation.NavigateTo($"/order-details/{orderId}");
     }
 
-    private void ReorderItems(Order order)
+    private async Task CancelOrder(Order order)
     {
-        // Implementation to add all items from the order back to cart
-        // You would need to implement this in your cart service
-        // cartService.ReorderItems(order);
+        try
+        {
+            // Call the order service to cancel the order
+            var success = await orderService.CancelOrderAsync(order.OrderId);
 
-        // Show success message
-        // Then optionally navigate to cart
-        Navigation.NavigateTo("/cart");
+            if (success)
+            {
+                // Restore inventory for cancelled items
+                inventoryService.RestoreInventoryOrder(order);
+
+                // Show success message
+                Snackbar.Add($"Order #{order.OrderId} has been cancelled successfully.", Severity.Success);
+
+                // Reload orders to reflect the changes
+                await LoadOrders();
+                StateHasChanged();
+            }
+            else
+            {
+                Snackbar.Add($"Failed to cancel order #{order.OrderId}. Please try again.", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error cancelling order: {ex.Message}");
+            Snackbar.Add("An error occurred while cancelling the order.", Severity.Error);
+        }
     }
 
     private void ContinueShopping()

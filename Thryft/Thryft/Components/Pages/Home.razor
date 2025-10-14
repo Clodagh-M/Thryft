@@ -214,6 +214,7 @@
                 <MudItem xs="2" Class="d-flex align-center justify-end">
                     <MudMenu Variant="Variant.Filled" Color="Color.Info" Label="Manage Products" Style="color: #000; ">
                         <MudMenuItem OnClick="NavigateToAddProducts">Add Products</MudMenuItem>
+                        <MudMenuItem OnClick="NavigateToUpdateStatus">Order Status</MudMenuItem>
                     </MudMenu>
             
                 </MudItem>
@@ -503,7 +504,12 @@
 
     private void NavigateToAddProducts()
     {
-        Navigation.NavigateTo("/add-product");
+        Navigation.NavigateTo("/admin/add-product");
+    }
+
+    private void NavigateToUpdateStatus()
+    {
+        Navigation.NavigateTo("/admin/order-status-update");
     }
 
 private void SetCategoryBinding(string category, bool value)

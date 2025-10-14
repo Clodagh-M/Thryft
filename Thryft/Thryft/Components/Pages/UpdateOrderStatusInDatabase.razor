@@ -1,0 +1,655 @@
+﻿@page "/admin/order-status-update"
+@* @attribute [Authorize(Roles = "Admin")] *@
+
+@using Microsoft.AspNetCore.Components.Authorization
+@using Thryft.Models
+@using Thryft.Services
+
+@inject OrderService orderService
+@inject ProductIconService productIconService
+@inject NavigationManager Navigation
+@inject ProductService productService
+@inject AuthService authService
+
+@rendermode InteractiveServer
+
+<style>
+    .orders-container {
+        max-height: calc(100vh - 200px);
+        overflow-y: auto;
+        scrollbar-width: thin;
+    }
+
+    .order-card {
+        transition: box-shadow 0.3s ease-in-out;
+        border: 1px solid #e0e0e0;
+        cursor: pointer;
+    }
+
+    .order-card:hover {
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .order-card.selected {
+        border: 2px solid var(--mud-palette-primary);
+        background-color: rgba(var(--mud-palette-primary-rgb), 0.04);
+    }
+
+    .order-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #e0e0e0;
+    }
+
+    .order-item {
+        border-bottom: 1px solid #f5f5f5;
+        padding: 16px 0;
+    }
+
+    .order-item:last-child {
+        border-bottom: none;
+    }
+
+    .product-icon-container {
+        width: 60px;
+        height: 60px;
+        background-color: #f5f5f5;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        margin-right: 16px;
+    }
+
+    .status-chip {
+        border-radius: 16px;
+        padding: 4px 12px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+
+    .admin-panel {
+        border-left: 1px solid #e0e0e0;
+        background-color: #fafafa;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .stat-card {
+        background: white;
+        padding: 16px;
+        border-radius: 8px;
+        border: 1px solid #e0e0e0;
+        text-align: center;
+    }
+
+    .filter-section {
+        background: white;
+        padding: 16px;
+        border-radius: 8px;
+        border: 1px solid #e0e0e0;
+        margin-bottom: 16px;
+    }
+</style>
+
+<PageTitle>Thryft - Admin Orders</PageTitle>
+
+<AuthorizeView>
+    <Authorized>
+        <MudContainer MaxWidth="MaxWidth.Large" Class="my-4">
+            <MudGrid>
+                <MudItem xs="12" Class="d-flex align-center justify-space-between mb-4">
+                    <MudText Typo="Typo.h4">Order Management</MudText>
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               OnClick="RefreshOrders"
+                               StartIcon="@Icons.Material.Filled.Refresh">
+                        Refresh
+                    </MudButton>
+                </MudItem>
+
+                <!-- Statistics and Filters -->
+                <MudItem xs="12">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <MudText Typo="Typo.h6" Color="Color.Primary">Total Orders</MudText>
+                            <MudText Typo="Typo.h4">@_orders.Count</MudText>
+                        </div>
+                        <div class="stat-card">
+                            <MudText Typo="Typo.h6" Color="Color.Warning">Processing</MudText>
+                            <MudText Typo="Typo.h4">@_orders.Count(o => o.Status == "Processing")</MudText>
+                        </div>
+                        <div class="stat-card">
+                            <MudText Typo="Typo.h6" Color="Color.Info">Shipped</MudText>
+                            <MudText Typo="Typo.h4">@_orders.Count(o => o.Status == "Shipped")</MudText>
+                        </div>
+                        <div class="stat-card">
+                            <MudText Typo="Typo.h6" Color="Color.Success">Completed</MudText>
+                            <MudText Typo="Typo.h4">@_orders.Count(o => o.Status == "Completed")</MudText>
+                        </div>
+                    </div>
+                </MudItem>
+
+                <MudItem xs="12">
+                    <div class="filter-section">
+                        <MudGrid>
+                            <MudItem xs="12" sm="6" md="3">
+                                <MudSelect T="string" Label="Status Filter" @bind-Value="_statusFilter" Variant="Variant.Outlined">
+                                    <MudSelectItem Value="@string.Empty">All Statuses</MudSelectItem>
+                                    <MudSelectItem Value="@STATUS_PROCESSING">Processing</MudSelectItem>
+                                    <MudSelectItem Value="@STATUS_SHIPPED">Shipped</MudSelectItem>
+                                    <MudSelectItem Value="@STATUS_COMPLETED">Completed</MudSelectItem>
+                                    <MudSelectItem Value="@STATUS_CANCELLED">Cancelled</MudSelectItem>
+                                </MudSelect>
+                            </MudItem>
+                            <MudItem xs="12" sm="6" md="3">
+                                <MudTextField @bind-Value="_searchTerm" 
+                                             Label="Search Order ID" 
+                                             Variant="Variant.Outlined"
+                                             Adornment="Adornment.Start"
+                                             AdornmentIcon="@Icons.Material.Filled.Search" />
+                            </MudItem>
+                            <MudItem xs="12" sm="6" md="3">
+                                <MudSelect T="string" Label="Sort By" @bind-Value="_sortBy" Variant="Variant.Outlined">
+                                    <MudSelectItem Value="@SORT_NEWEST">Newest First</MudSelectItem>
+                                    <MudSelectItem Value="@SORT_OLDEST">Oldest First</MudSelectItem>
+                                    <MudSelectItem Value="@SORT_TOTAL">Total Amount</MudSelectItem>
+                                </MudSelect>
+                            </MudItem>
+                            <MudItem xs="12" sm="6" md="3" Class="d-flex align-end">
+                                <MudButton Variant="Variant.Outlined"
+                                           Color="Color.Secondary"
+                                           OnClick="ClearFilters"
+                                           FullWidth="true">
+                                    Clear Filters
+                                </MudButton>
+                            </MudItem>
+                        </MudGrid>
+                    </div>
+                </MudItem>
+
+                <MudItem xs="12" md="8">
+                    @if (_filteredOrders.Any())
+                    {
+                        <div class="orders-container">
+                            @foreach (var order in _filteredOrders)
+                            {
+                                <MudCard Class="@GetOrderCardClass(order)" @onclick="@(() => SelectOrder(order))">
+                                    <!-- Order Header -->
+                                    <div class="order-header px-4 py-3">
+                                        <MudGrid>
+                                            <MudItem xs="12" sm="6">
+                                                <div class="d-flex flex-column">
+                                                    <MudText Typo="Typo.h6" Class="mb-1">Order #@order.OrderId</MudText>
+                                                    <MudText Typo="Typo.caption" Color="Color.Primary">
+                                                        Placed on @order.Created.ToString("MMMM dd, yyyy 'at' h:mm tt")
+                                                    </MudText>
+                                                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                                        User ID: @order.UserId
+                                                    </MudText>
+                                                </div>
+                                            </MudItem>
+                                            <MudItem xs="12" sm="6" Class="d-flex align-center justify-end">
+                                                <div class="d-flex flex-column align-end">
+                                                    <MudText Typo="Typo.h6" Color="Color.Info">
+                                                        €@order.Total.ToString("F2")
+                                                    </MudText>
+                                                    <div class="status-chip @GetStatusClass(order.Status)">
+                                                        @GetStatusText(order.Status)
+                                                    </div>
+                                                </div>
+                                            </MudItem>
+                                        </MudGrid>
+                                    </div>
+
+                                    <!-- Order Items -->
+                                    <MudCardContent Class="pa-0">
+                                        @foreach (var item in order.OrderItems.Take(2))
+                                        {
+                                            <div class="order-item px-4">
+                                                <MudGrid>
+                                                    <MudItem xs="12" sm="1" Class="d-flex align-center">
+                                                        <div class="product-icon-container">
+                                                            <i class="@productIconService.GetProductIcon(GetProductCategory(item.ProductId), item.SelectedColour)"
+                                                               style="@productIconService.GetColorStyle(item.SelectedColour) font-size: 24px;"></i>
+                                                        </div>
+                                                    </MudItem>
+                                                    <MudItem xs="12" sm="5">
+                                                        <div class="d-flex flex-column">
+                                                            <MudText Typo="Typo.subtitle1" Class="mb-1">
+                                                                @GetProductName(item.ProductId)
+                                                            </MudText>
+                                                            <div class="d-flex gap-2">
+                                                                @if (item.SelectedColour.HasValue)
+                                                                {
+                                                                    <MudText Typo="Typo.caption" Color="Color.Primary">
+                                                                        Color: @item.SelectedColour.Value
+                                                                    </MudText>
+                                                                }
+                                                                @if (item.SelectedSize.HasValue)
+                                                                {
+                                                                    <MudText Typo="Typo.caption" Color="Color.Primary">
+                                                                        Size: @item.SelectedSize.Value
+                                                                    </MudText>
+                                                                }
+                                                            </div>
+                                                        </div>
+                                                    </MudItem>
+                                                    <MudItem xs="6" sm="3" Class="d-flex align-center">
+                                                        <MudText Typo="Typo.body1">
+                                                            Qty: @item.Quantity
+                                                        </MudText>
+                                                    </MudItem>
+                                                    <MudItem xs="6" sm="3" Class="d-flex align-center justify-end">
+                                                        <MudText Typo="Typo.subtitle1" Color="Color.Primary">
+                                                            €@(item.UnitPrice * item.Quantity)
+                                                        </MudText>
+                                                    </MudItem>
+                                                </MudGrid>
+                                            </div>
+                                        }
+                                        @if (order.OrderItems.Count > 2)
+                                        {
+                                            <div class="px-4 py-2">
+                                                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                                    + @(order.OrderItems.Count - 2) more items
+                                                </MudText>
+                                            </div>
+                                        }
+                                    </MudCardContent>
+                                </MudCard>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <MudCard Class="text-center py-16">
+                            <MudCardContent>
+                                <MudIcon Icon="@Icons.Material.Filled.Inventory2"
+                                         Size="MudBlazor.Size.Large"
+                                         Color="Color.Secondary"
+                                         Class="mb-3" />
+                                <MudText Typo="Typo.h5" Class="mb-2">No Orders Found</MudText>
+                                <MudText Typo="Typo.body1" Color="Color.Primary" Class="mb-4">
+                                    @(_orders.Any() ? "No orders match your filters." : "No orders have been placed yet.")
+                                </MudText>
+                                @if (_orders.Any())
+                                {
+                                    <MudButton Variant="Variant.Outlined"
+                                               Color="Color.Primary"
+                                               OnClick="ClearFilters">
+                                        Clear Filters
+                                    </MudButton>
+                                }
+                            </MudCardContent>
+                        </MudCard>
+                    }
+                </MudItem>
+
+                <!-- Order Details Panel -->
+                <MudItem xs="12" md="4">
+                    @if (_selectedOrder != null)
+                    {
+                        <MudCard Class="admin-panel sticky-top" Style="top: 20px;">
+                            <MudCardContent>
+                                <MudText Typo="Typo.h5" Class="mb-4">Order Details</MudText>
+                                
+                                <!-- Order Information -->
+                                <div class="mb-4">
+                                    <MudText Typo="Typo.subtitle2" Color="Color.Primary" Class="mb-2">Order Information</MudText>
+                                    <MudGrid>
+                                        <MudItem xs="6">
+                                            <MudText Typo="Typo.caption">Order ID:</MudText>
+                                        </MudItem>
+                                        <MudItem xs="6">
+                                            <MudText Typo="Typo.caption" Class="text-right">#@_selectedOrder.OrderId</MudText>
+                                        </MudItem>
+                                        <MudItem xs="6">
+                                            <MudText Typo="Typo.caption">User ID:</MudText>
+                                        </MudItem>
+                                        <MudItem xs="6">
+                                            <MudText Typo="Typo.caption" Class="text-right">@_selectedOrder.UserId</MudText>
+                                        </MudItem>
+                                        <MudItem xs="6">
+                                            <MudText Typo="Typo.caption">Date:</MudText>
+                                        </MudItem>
+                                        <MudItem xs="6">
+                                            <MudText Typo="Typo.caption" Class="text-right">
+                                                @_selectedOrder.Created.ToString("MMM dd, yyyy")
+                                            </MudText>
+                                        </MudItem>
+                                        <MudItem xs="6">
+                                            <MudText Typo="Typo.caption">Total:</MudText>
+                                        </MudItem>
+                                        <MudItem xs="6">
+                                            <MudText Typo="Typo.caption" Class="text-right">
+                                                €@_selectedOrder.Total.ToString("F2")
+                                            </MudText>
+                                        </MudItem>
+                                    </MudGrid>
+                                </div>
+
+                                <!-- Status Update -->
+                                <div class="mb-4">
+                                    <MudText Typo="Typo.subtitle2" Color="Color.Primary" Class="mb-2">Update Status</MudText>
+                                    <MudSelect T="string" 
+                                               Label="Order Status" 
+                                               @bind-Value="_selectedOrder.Status"
+                                               Variant="Variant.Outlined"
+                                               Class="mb-3">
+                                        <MudSelectItem Value="@STATUS_PROCESSING">Processing</MudSelectItem>
+                                        <MudSelectItem Value="@STATUS_SHIPPED">Shipped</MudSelectItem>
+                                        <MudSelectItem Value="@STATUS_COMPLETED">Completed</MudSelectItem>
+                                        <MudSelectItem Value="@STATUS_CANCELLED">Cancelled</MudSelectItem>
+                                    </MudSelect>
+                                    
+                                    <MudButton Variant="Variant.Filled"
+                                               Color="Color.Primary"
+                                               OnClick="UpdateOrderStatus"
+                                               FullWidth="true"
+                                               Disabled="@(_isUpdating)"
+                                               StartIcon="@Icons.Material.Filled.Save">
+                                        @if (_isUpdating)
+                                        {
+                                            <MudProgressCircular Size="MudBlazor.Size.Small" Indeterminate="true" />
+                                        }
+                                        Update Status
+                                    </MudButton>
+                                </div>
+
+                                <!-- Order Items Summary -->
+                                <div>
+                                    <MudText Typo="Typo.subtitle2" Color="Color.Primary" Class="mb-2">Items (@_selectedOrder.OrderItems.Count)</MudText>
+                                    @foreach (var item in _selectedOrder.OrderItems)
+                                    {
+                                        <div class="d-flex justify-space-between align-center py-1">
+                                            <MudText Typo="Typo.caption">
+                                                @GetProductName(item.ProductId) × @item.Quantity
+                                            </MudText>
+                                            <MudText Typo="Typo.caption" Color="Color.Primary">
+                                                €@(item.UnitPrice * item.Quantity)
+                                            </MudText>
+                                        </div>
+                                    }
+                                </div>
+                            </MudCardContent>
+                        </MudCard>
+                    }
+                    else
+                    {
+                        <MudCard Class="admin-panel text-center py-16">
+                            <MudCardContent>
+                                <MudIcon Icon="@Icons.Material.Filled.PointOfSale"
+                                         Size="MudBlazor.Size.Large"
+                                         Color="Color.Secondary"
+                                         Class="mb-3" />
+                                <MudText Typo="Typo.h6" Class="mb-2">Select an Order</MudText>
+                                <MudText Typo="Typo.body2" Color="Color.Primary">
+                                    Click on an order from the list to view details and update its status.
+                                </MudText>
+                            </MudCardContent>
+                        </MudCard>
+                    }
+                </MudItem>
+            </MudGrid>
+        </MudContainer>
+
+        <!-- Success Dialog -->
+        <MudDialog @bind-IsVisible="_showSuccessDialog">
+            <DialogContent>
+                <div class="text-center">
+                    <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Size="MudBlazor.Size.Large" Class="mb-3" />
+                    <MudText Typo="Typo.h6">Status Updated Successfully</MudText>
+                    <MudText Typo="Typo.body2" Class="mt-2">
+                        Order #@_selectedOrder?.OrderId has been updated to: @_selectedOrder?.Status
+                    </MudText>
+                </div>
+            </DialogContent>
+            <DialogActions>
+                <MudButton Variant="Variant.Text" OnClick="@(() => _showSuccessDialog = false)" Color="Color.Primary">
+                    OK
+                </MudButton>
+            </DialogActions>
+        </MudDialog>
+    </Authorized>
+    <NotAuthorized>
+        <MudContainer Class="text-center py-16">
+            <MudIcon Icon="@Icons.Material.Filled.AdminPanelSettings" Size="MudBlazor.Size.Large" Color="Color.Primary" Class="mb-4" />
+            <MudText Typo="Typo.h4" Class="mb-3">Admin Access Required</MudText>
+            <MudText Typo="Typo.body1" Color="Color.Primary" Class="mb-4">
+                You need administrator privileges to access this page.
+            </MudText>
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       OnClick="RedirectToHome"
+                       StartIcon="@Icons.Material.Filled.Home">
+                Go Home
+            </MudButton>
+        </MudContainer>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private List<Order> _orders = new List<Order>();
+    private List<Order> _filteredOrders = new List<Order>();
+    private Order? _selectedOrder = null;
+    private Dictionary<int, string> _productNames = new Dictionary<int, string>();
+    private Dictionary<int, string> _productCategories = new Dictionary<int, string>();
+    
+    // Filter and search state
+    private string _statusFilter = "";
+    private string _searchTerm = "";
+    private string _sortBy = "newest";
+    private bool _isUpdating = false;
+    private bool _showSuccessDialog = false;
+
+    private const string STATUS_PROCESSING = "Processing";
+    private const string STATUS_SHIPPED = "Shipped";
+    private const string STATUS_COMPLETED = "Completed";
+    private const string STATUS_CANCELLED = "Cancelled";
+
+    private const string SORT_NEWEST = "newest";
+    private const string SORT_OLDEST = "oldest";
+    private const string SORT_TOTAL = "total";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadOrders();
+    }
+
+    private async Task LoadOrders()
+    {
+        try
+        {
+            // Get all orders (admin access)
+            _orders = await orderService.GetAllOrdersAsync() ?? new List<Order>();
+            await LoadProductDetails();
+            ApplyFilters();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading orders: {ex.Message}");
+        }
+    }
+
+    private async Task LoadProductDetails()
+    {
+        try
+        {
+            var allProducts = await productService.GetProductsAsync();
+
+            foreach (var order in _orders)
+            {
+                foreach (var item in order.OrderItems)
+                {
+                    if (!_productNames.ContainsKey(item.ProductId))
+                    {
+                        var product = allProducts.FirstOrDefault(p => p.ProductId == item.ProductId);
+                        if (product != null)
+                        {
+                            _productNames[item.ProductId] = product.ProductName;
+                            _productCategories[item.ProductId] = product.Category;
+                        }
+                        else
+                        {
+                            _productNames[item.ProductId] = $"Product #{item.ProductId}";
+                            _productCategories[item.ProductId] = "clothing";
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading product details: {ex.Message}");
+        }
+    }
+
+    private void ApplyFilters()
+    {
+        IEnumerable<Order> filtered = _orders.AsEnumerable();
+
+        // Apply status filter
+        if (!string.IsNullOrEmpty(_statusFilter))
+        {
+            filtered = filtered.Where(o => o.Status == _statusFilter);
+        }
+
+        // Apply search filter
+        if (!string.IsNullOrEmpty(_searchTerm))
+        {
+            filtered = filtered.Where(o => 
+                o.OrderId.ToString().Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                o.UserId.ToString().Contains(_searchTerm, StringComparison.OrdinalIgnoreCase));
+        }
+
+        // Apply sorting
+        filtered = _sortBy switch
+        {
+            "oldest" => filtered.OrderBy(o => o.Created),
+            "total" => filtered.OrderByDescending(o => o.Total),
+            _ => filtered.OrderByDescending(o => o.Created) // newest first
+        };
+
+        _filteredOrders = filtered.ToList();
+        StateHasChanged();
+    }
+
+    private void SelectOrder(Order order)
+    {
+        _selectedOrder = order;
+        StateHasChanged();
+    }
+
+    private async Task UpdateOrderStatus()
+    {
+        if (_selectedOrder == null) return;
+
+        _isUpdating = true;
+        StateHasChanged();
+
+        try
+        {
+            // Update the order status via your service
+            var success = await orderService.UpdateOrderStatusAsync(_selectedOrder.OrderId, _selectedOrder.Status);
+            
+            if (success)
+            {
+                _showSuccessDialog = true;
+                // Refresh the orders to reflect the change
+                await LoadOrders();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error updating order status: {ex.Message}");
+            // You might want to show an error message here
+        }
+        finally
+        {
+            _isUpdating = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RefreshOrders()
+    {
+        await LoadOrders();
+    }
+
+    private string GetOrderCardClass(Order order)
+    {
+        var baseClass = "order-card mb-4";
+        return order.OrderId == _selectedOrder?.OrderId ? $"{baseClass} selected" : baseClass;
+    }
+
+    private void ClearFilters()
+    {
+        _statusFilter = "";
+        _searchTerm = "";
+        _sortBy = "newest";
+        ApplyFilters();
+    }
+
+    private void RedirectToHome()
+    {
+        Navigation.NavigateTo("/home");
+    }
+
+    private string GetProductName(int productId)
+    {
+        return _productNames.ContainsKey(productId) ? _productNames[productId] : $"Product #{productId}";
+    }
+
+    private string GetProductCategory(int productId)
+    {
+        return _productCategories.ContainsKey(productId) ? _productCategories[productId] : "clothing";
+    }
+
+    private string GetStatusClass(string status)
+    {
+        return status.ToLower() switch
+        {
+            var s when s == STATUS_COMPLETED.ToLower() => "mud-theme-success",
+            var s when s == STATUS_PROCESSING.ToLower() => "mud-theme-warning",
+            var s when s == STATUS_SHIPPED.ToLower() => "mud-theme-info",
+            var s when s == STATUS_CANCELLED.ToLower() => "mud-theme-error",
+            _ => "mud-theme-secondary"
+        };
+    }
+
+    private string GetStatusText(string status)
+    {
+        return status switch
+        {
+            STATUS_COMPLETED => "✓ Completed",
+            STATUS_PROCESSING => "⏳ Processing",
+            STATUS_SHIPPED => "🚚 Shipped",
+            STATUS_CANCELLED => "❌ Cancelled",
+            _ => status
+        };
+    }
+
+    // Watch for filter changes
+    private void OnStatusFilterChanged(string value)
+    {
+        _statusFilter = value;
+        ApplyFilters();
+    }
+
+    private void OnSearchTermChanged(string value)
+    {
+        _searchTerm = value;
+        ApplyFilters();
+    }
+
+    private void OnSortByChanged(string value)
+    {
+        _sortBy = value;
+        ApplyFilters();
+    }
+}

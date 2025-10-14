@@ -71,6 +71,51 @@ namespace Thryft.Services
             }
         }
 
+        public async Task<bool> RestoreInventoryOrder(Order order)
+        {
+            try
+            {
+                bool allRestored = true;
+
+                foreach (var item in order.OrderItems)
+                {
+                    var success = await RestoreInventory(
+                        item.ProductId,
+                        item.SelectedColour,
+                        item.SelectedSize,
+                        item.Quantity);
+
+                    if (!success)
+                    {
+                        allRestored = false;
+                        _logger.LogWarning(
+                            "Failed to restore inventory for product {ProductId} in order {OrderId}",
+                            item.ProductId, order.OrderId);
+                    }
+                }
+
+                if (allRestored)
+                {
+                    _logger.LogInformation(
+                        "Successfully restored all inventory for order {OrderId}",
+                        order.OrderId);
+                }
+                else
+                {
+                    _logger.LogWarning(
+                        "Partially restored inventory for order {OrderId}. Some items may not have been restored.",
+                        order.OrderId);
+                }
+
+                return allRestored;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error restoring inventory for order {OrderId}", order.OrderId);
+                return false;
+            }
+        }
+
         // Optional: Method to restore inventory if order fails
         public async Task<bool> RestoreInventory(int productId, Colour? color, Size? size, int quantity)
         {
