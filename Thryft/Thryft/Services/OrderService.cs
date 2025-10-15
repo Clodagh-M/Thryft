@@ -9,17 +9,68 @@ namespace Thryft.Services
     public class OrderService
     {
         private readonly AppDbContext _context;
+        private readonly ILogger<OrderService> _logger;
 
-        public OrderService(AppDbContext context)
+        public OrderService(AppDbContext context, ILogger<OrderService> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         public async Task<Order> CreateOrderAsync(Order order)
         {
-            _context.Orders.Add(order);
-            await _context.SaveChangesAsync();
-            return order;
+            await using var transaction = await _context.Database.BeginTransactionAsync();
+
+            try
+            {
+                _logger.LogInformation("Starting order creation for user {UserId}", order.UserId);
+
+                // Step 1: Create the Order first
+                var newOrder = new Order
+                {
+                    UserId = order.UserId,
+                    Total = order.Total,
+                    Created = DateTime.UtcNow,
+                    Status = "Processing"
+                };
+
+                _context.Orders.Add(newOrder);
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Order created with ID: {OrderId}", newOrder.OrderId);
+
+                // Step 2: Create OrderItems with the actual OrderId
+                var orderItems = order.OrderItems.Select(oi => new OrderItem
+                {
+                    OrderId = newOrder.OrderId,
+                    ProductId = oi.ProductId,
+                    Quantity = oi.Quantity,
+                    UnitPrice = oi.UnitPrice,
+                    SelectedColour = oi.SelectedColour,
+                    SelectedSize = oi.SelectedSize
+                }).ToList();
+
+                _logger.LogInformation("Creating {ItemCount} order items", orderItems.Count);
+
+                // Step 3: Add order items
+                _context.OrderItems.AddRange(orderItems);
+                await _context.SaveChangesAsync();
+
+                await transaction.CommitAsync();
+
+                _logger.LogInformation("Order {OrderId} completed successfully", newOrder.OrderId);
+
+                // Return the complete order
+                return await _context.Orders
+                    .Include(o => o.OrderItems)
+                    .FirstOrDefaultAsync(o => o.OrderId == newOrder.OrderId);
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "Error creating order for user {UserId}", order.UserId);
+                throw;
+            }
         }
 
         public async Task<Order?> GetOrderByIdAsync(int orderId)

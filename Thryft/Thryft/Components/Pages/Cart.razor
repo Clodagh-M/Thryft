@@ -525,36 +525,18 @@
 
     private async Task RemoveItem(CartItem item)
     {
-        bool? result = await DialogService.ShowMessageBox(
-            "Remove Item",
-            $"Are you sure you want to remove {item.ProductName} from your cart?",
-            yesText: "Remove",
-            cancelText: "Keep"
-        );
-
-        if (result == true)
-        {
-            cartService.RemoveFromCart(item.ProductId, item.SelectedColor, item.SelectedSize);
-            Snackbar.Add($"{item.ProductName} removed from cart", Severity.Info);
-        }
+        cartService.RemoveFromCart(item.ProductId, item.SelectedColor, item.SelectedSize);
+        Snackbar.Add($"{item.ProductName} removed from cart", Severity.Info);
+        
     }
 
     private async Task ClearCart()
     {
         if (!cartService.CurrentCart.Items.Any()) return;
 
-        bool? result = await DialogService.ShowMessageBox(
-            "Clear Cart",
-            "Are you sure you want to remove all items from your cart?",
-            yesText: "Clear Cart",
-            cancelText: "Cancel"
-        );
-
-        if (result == true)
-        {
-            cartService.ClearCart();
-            Snackbar.Add("Cart cleared successfully", Severity.Success);
-        }
+        cartService.ClearCart();
+        Snackbar.Add("Cart cleared successfully", Severity.Success);
+        
     }
 
     private void ContinueShopping()

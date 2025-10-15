@@ -41,21 +41,30 @@ public class AppDbContext : DbContext
                   .OnDelete(DeleteBehavior.Restrict);
         });
 
-        // Configure OrderItem entity (composite key)
-        modelBuilder.Entity<OrderItem>(entity =>
-        {
-            entity.HasKey(e => new { e.OrderId, e.ProductId });
+        // Configure OrderItem composite primary key
+        modelBuilder.Entity<OrderItem>()
+            .HasKey(oi => new { oi.OrderId, oi.ProductId });
 
-            // Relationships
-            entity.HasOne(e => e.Order)
-                  .WithMany(e => e.OrderItems)
-                  .HasForeignKey(e => e.OrderId);
+        // Configure Order -> OrderItem relationship
+        modelBuilder.Entity<OrderItem>()
+            .HasOne(oi => oi.Order)
+            .WithMany(o => o.OrderItems)
+            .HasForeignKey(oi => oi.OrderId)
+            .OnDelete(DeleteBehavior.Cascade);
 
-            entity.HasOne(e => e.Product)
-                  .WithMany()
-                  .HasForeignKey(e => e.ProductId)
-                  .OnDelete(DeleteBehavior.Restrict);
-        });
+        // Configure OrderItem -> Product relationship
+        modelBuilder.Entity<OrderItem>()
+            .HasOne(oi => oi.Product)
+            .WithMany() // Adjust if Product has navigation property back to OrderItems
+            .HasForeignKey(oi => oi.ProductId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // Configure Order -> User relationship
+        modelBuilder.Entity<Order>()
+            .HasOne(o => o.User)
+            .WithMany() // Adjust if User has navigation property back to Orders
+            .HasForeignKey(o => o.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<Product>(entity =>
         {
