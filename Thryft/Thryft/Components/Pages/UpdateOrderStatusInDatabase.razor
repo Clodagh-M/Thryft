@@ -467,7 +467,7 @@
     private List<Order> _filteredOrders = new List<Order>();
     private Order? _selectedOrder = null;
     private Dictionary<int, ProductDetail> _productDetails = new Dictionary<int, ProductDetail>();
-    
+
     // Filter and search state
     private string _statusFilter = "";
     private string _searchTerm = "";
@@ -503,7 +503,7 @@
         {
             // Get all orders (admin access)
             _orders = await orderService.GetAllOrdersAsync() ?? new List<Order>();
-            
+
             // Debug: Check if orders have items
             Console.WriteLine($"Loaded {_orders.Count} orders");
             foreach (var order in _orders)
@@ -517,7 +517,7 @@
                     }
                 }
             }
-            
+
             await LoadProductDetails();
             ApplyFilters();
         }
@@ -586,9 +586,9 @@
         // Apply search filter
         if (!string.IsNullOrEmpty(_searchTerm))
         {
-            filtered = filtered.Where(o => 
-                o.OrderId.ToString().Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ||
-                o.UserId.ToString().Contains(_searchTerm, StringComparison.OrdinalIgnoreCase));
+            filtered = filtered.Where(o =>
+                o.OrderId.ToString().Contains(_searchTerm, StringComparison.OrdinalIgnoreCase));
+            /* ||o.UserId.ToString().Contains(_searchTerm, StringComparison.OrdinalIgnoreCase)); */
         }
 
         // Apply sorting

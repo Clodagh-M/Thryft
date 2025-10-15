@@ -8,173 +8,486 @@
 @inject NavigationManager Navigation
 @inject ProductIconService productIconService
 @inject ProductService productService
+@inject UserService userService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
 
 @rendermode InteractiveServer
+
+<style>
+    .website-header {
+        background: linear-gradient(135deg, #ffa396 20%, #eb8691 100%);
+        color: white;
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+    }
+
+    .cart-container {
+        max-height: calc(100vh - 300px);
+        overflow-y: auto;
+        padding-right: 8px;
+    }
+
+        .cart-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .cart-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        .cart-container::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 10px;
+        }
+
+    .cart-item-card {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border: 1px solid #e8e8e8;
+        border-radius: 12px;
+        overflow: hidden;
+        margin-bottom: 16px;
+        background: white;
+    }
+
+        .cart-item-card:hover {
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+
+    .product-icon-container {
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px;
+        margin-right: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .quantity-controls {
+        background: #f8f9fa;
+        border-radius: 25px;
+        padding: 4px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid #e0e0e0;
+    }
+
+    .quantity-display {
+        min-width: 40px;
+        text-align: center;
+        font-weight: 600;
+        color: #1976d2;
+    }
+
+    .empty-state {
+        padding: 80px 20px;
+        text-align: center;
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .summary-card {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        border: 1px solid #e8e8e8;
+        position: sticky;
+        top: 20px;
+    }
+
+    .auth-required-container {
+        background: white;
+        border-radius: 16px;
+        padding: 60px 40px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+        text-align: center;
+        max-width: 500px;
+        margin: 40px auto;
+    }
+
+    .section-title {
+        position: relative;
+        padding-bottom: 12px;
+        margin-bottom: 24px;
+    }
+
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(90deg, #1976d2 0%, #42a5f5 100%);
+            border-radius: 3px;
+        }
+
+    .product-name {
+        font-weight: 600;
+        color: #424242;
+        margin-bottom: 8px;
+    }
+
+    .product-price {
+        font-weight: 700;
+        color: #1976d2;
+        font-size: 1.1rem;
+    }
+
+    .detail-badge {
+        background-color: #f0f4f8;
+        padding: 6px 12px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        color: #5a6c7d;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        margin-right: 8px;
+        margin-bottom: 4px;
+    }
+
+    .total-price {
+        font-weight: 700;
+        color: #1976d2;
+        font-size: 1.3rem;
+    }
+
+    .item-total {
+        font-weight: 600;
+        color: #424242;
+        font-size: 1.1rem;
+    }
+
+    .remove-btn {
+        transition: all 0.2s ease;
+        border-radius: 8px;
+    }
+
+        .remove-btn:hover {
+            background-color: #ffebee !important;
+            transform: scale(1.05);
+        }
+
+    .clear-cart-btn {
+        transition: all 0.2s ease;
+        border-radius: 8px;
+    }
+
+        .clear-cart-btn:hover {
+            background-color: #ffebee !important;
+        }
+
+    .checkout-btn {
+        border-radius: 12px;
+        padding: 12px 24px;
+        font-weight: 600;
+        text-transform: none;
+        transition: all 0.3s ease;
+    }
+
+        .checkout-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(25, 118, 210, 0.3);
+        }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .stat-card {
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        border: 1px solid #e0e0e0;
+        text-align: center;
+        transition: transform 0.2s ease;
+    }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+    .controls-bar {
+        background: white;
+        padding: 1rem;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 1rem !important;
+    }
+</style>
 
 <PageTitle>Thryft - Shopping Cart</PageTitle>
 
 <AuthorizeView>
     <Authorized>
+        <!-- Hero Header matching home page -->
+        <div class="website-header">
+            <MudContainer MaxWidth="MaxWidth.Large">
+                <div class="hero-section">
+                    <MudText Typo="Typo.h3" Class="mb-3" Style="font-weight: 700;">
+                        Shopping Cart
+                    </MudText>
+                    <MudText Typo="Typo.h6" Class="mb-4" Style="opacity: 0.9;">
+                        Review your items and proceed to checkout
+                    </MudText>
+                </div>
+            </MudContainer>
+        </div>
 
-        <MudContainer MaxWidth="MaxWidth.Large" Class="my-4">
+        <MudContainer MaxWidth="MaxWidth.Large" Class="my-6">
+            <!-- Cart Statistics -->
+            @if (cartService.CurrentCart.Items.Any())
+            {
+                <MudItem xs="12" Class="mb-6">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <MudText Typo="Typo.h6" Color="Color.Primary">Total Items</MudText>
+                            <MudText Typo="Typo.h4">@cartService.CurrentCart.TotalItems</MudText>
+                        </div>
+                        <div class="stat-card">
+                            <MudText Typo="Typo.h6" Color="Color.Info">Subtotal</MudText>
+                            <MudText Typo="Typo.h4">€@cartService.CurrentCart.TotalPrice.ToString("F2")</MudText>
+                        </div>
+                        <div class="stat-card">
+                            <MudText Typo="Typo.h6" Color="Color.Success">Shipping</MudText>
+                            <MudText Typo="Typo.h4">€5.00</MudText>
+                        </div>
+                        <div class="stat-card">
+                            <MudText Typo="Typo.h6" Color="Color.Warning">Total</MudText>
+                            <MudText Typo="Typo.h4">€@((cartService.CurrentCart.TotalPrice + 5.00m).ToString("F2"))</MudText>
+                        </div>
+                    </div>
+                </MudItem>
+            }
 
             @if (cartService.CurrentCart.Items.Any())
             {
-                <MudGrid>
-                    <MudItem xs="12" md="8">
-                        <MudText Typo="Typo.h4" Class="mb-4">Shopping Cart</MudText>
-
-                        @foreach (var item in cartService.CurrentCart.Items)
-                        {
-                            <MudCard Class="mb-3">
-                                <MudCardContent>
-                                    <MudGrid>
-                                        <MudItem xs="12" sm="3">
-                                            <div class="product-icon-container"
-                                                 style="width: 100px; height: 100px; background-color: #f5f5f5; display: flex; align-items: center; justify-content: center; border-radius: 8px;">
-                                                <i class="@productIconService.GetProductIcon(GetProductCategory(item.ProductId), item.SelectedColor)"
-                                                   style="@productIconService.GetColorStyle(item.SelectedColor) font-size: 40px;"></i>
-                                            </div>
-                                        </MudItem>
-                                        <MudItem xs="12" sm="6">
-                                            <MudText Typo="Typo.h6">@item.ProductName</MudText>
-                                            <MudText Typo="Typo.body2" Color="Color.Primary">€@item.Price</MudText>
-
-                                            @if (item.SelectedColor.HasValue)
-                                            {
-                                                <MudText Typo="Typo.caption">Color: @item.SelectedColor.Value</MudText>
-                                            }
-
-                                            <MudSpacer/>
-
-                                            @if (item.SelectedSize.HasValue)
-                                            {
-                                                <MudText Typo="Typo.caption">Size: @item.SelectedSize.Value</MudText>
-                                            }
-                                        </MudItem>
-                                        <MudItem xs="12" sm="3">
-                                            <div class="d-flex align-center justify-end">
-                                                <MudIconButton Icon="@Icons.Material.Filled.Remove"
-                                                               OnClick="@(() => DecreaseQuantity(item))"
-                                                               Size="MudBlazor.Size.Small" />
-                                                <MudText Typo="Typo.h6" Class="mx-3">@item.Quantity</MudText>
-                                                <MudIconButton Icon="@Icons.Material.Filled.Add"
-                                                               OnClick="@(() => IncreaseQuantity(item))"
-                                                               Size="MudBlazor.Size.Small" />
-                                            </div>
-                                            <MudText Typo="Typo.h6" Class="text-right mt-2">€@item.TotalPrice</MudText>
-                                            <MudButton Variant="Variant.Text"
-                                                       Color="Color.Error"
-                                                       Size="MudBlazor.Size.Small"
-                                                       StartIcon="@Icons.Material.Filled.Delete"
-                                                       OnClick="@(() => RemoveItem(item))"
-                                                       Class="mt-1">
-                                                Remove
-                                            </MudButton>
-                                        </MudItem>
-                                    </MudGrid>
-                                </MudCardContent>
-                            </MudCard>
-                        }
-
-                        <div class="text-right mt-3">
-                            <MudButton Variant="Variant.Text"
+                <MudGrid Spacing="4">
+                    <!-- Cart Items Section -->
+                    <MudItem xs="12" lg="8">
+                        <div class="d-flex align-center justify-space-between mb-4">
+                            <div>
+                                <MudText Typo="Typo.h4" Class="section-title mb-0">Your Cart Items</MudText>
+                                <MudText Typo="Typo.body2" Color="Color.Primary" Class="mt-2">
+                                    @cartService.CurrentCart.TotalItems item@(cartService.CurrentCart.TotalItems != 1 ? "s" : "") in your cart
+                                </MudText>
+                            </div>
+                            <MudButton Variant="Variant.Outlined"
                                        Color="Color.Error"
                                        OnClick="ClearCart"
-                                       StartIcon="@Icons.Material.Filled.ClearAll">
+                                       StartIcon="@Icons.Material.Filled.ClearAll"
+                                       Size="MudBlazor.Size.Small"
+                                       Class="clear-cart-btn">
                                 Clear Cart
                             </MudButton>
                         </div>
+
+                        <div class="cart-container">
+                            @foreach (var item in cartService.CurrentCart.Items)
+                            {
+                                <MudCard Class="cart-item-card">
+                                    <MudCardContent Class="py-4">
+                                        <MudGrid Spacing="4" AlignItems="AlignItems.Center">
+                                            <!-- Product Image/Icon -->
+                                            <MudItem xs="12" sm="2" Class="d-flex justify-center">
+                                                <div class="product-icon-container">
+                                                    <i class="@productIconService.GetProductIcon(GetProductCategory(item.ProductId), item.SelectedColor)"
+                                                       style="@productIconService.GetColorStyle(item.SelectedColor) font-size: 32px;"></i>
+                                                </div>
+                                            </MudItem>
+
+                                            <!-- Product Details -->
+                                            <MudItem xs="12" sm="5">
+                                                <div class="d-flex flex-column">
+                                                    <MudText Typo="Typo.h6" Class="product-name">@item.ProductName</MudText>
+                                                    <MudText Typo="Typo.h6" Class="product-price mb-3">€@item.Price.ToString("F2")</MudText>
+
+                                                    <div class="d-flex flex-wrap">
+                                                        @if (item.SelectedColor.HasValue)
+                                                        {
+                                                            <div class="detail-badge">
+                                                                <MudIcon Icon="@Icons.Material.Filled.Palette" Size="MudBlazor.Size.Small" />
+                                                                @item.SelectedColor.Value
+                                                            </div>
+                                                        }
+                                                        @if (item.SelectedSize.HasValue)
+                                                        {
+                                                            <div class="detail-badge">
+                                                                <MudIcon Icon="@Icons.Material.Filled.Straighten" Size="MudBlazor.Size.Small" />
+                                                                @item.SelectedSize.Value
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            </MudItem>
+
+                                            <!-- Quantity Controls & Total -->
+                                            <MudItem xs="12" sm="5">
+                                                <div class="d-flex flex-column align-end gap-3">
+                                                    <!-- Quantity Controls -->
+                                                    <div class="d-flex align-center gap-2">
+                                                        <MudText Typo="Typo.body2" Class="mr-2" Color="Color.Primary">Quantity:</MudText>
+                                                        <div class="quantity-controls">
+                                                            <MudIconButton Icon="@Icons.Material.Filled.Remove"
+                                                                           OnClick="@(() => DecreaseQuantity(item))"
+                                                                           Size="MudBlazor.Size.Small"
+                                                                           Color="Color.Primary"
+                                                                           Variant="Variant.Outlined" />
+                                                            <MudText Typo="Typo.body1" Class="quantity-display">@item.Quantity</MudText>
+                                                            <MudIconButton Icon="@Icons.Material.Filled.Add"
+                                                                           OnClick="@(() => IncreaseQuantity(item))"
+                                                                           Size="MudBlazor.Size.Small"
+                                                                           Color="Color.Primary"
+                                                                           Variant="Variant.Outlined" />
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Item Total -->
+                                                    <MudText Typo="Typo.h6" Class="item-total">
+                                                        €@item.TotalPrice.ToString("F2")
+                                                    </MudText>
+
+                                                    <!-- Remove Button -->
+                                                    <MudButton Variant="Variant.Text"
+                                                               Color="Color.Error"
+                                                               Size="MudBlazor.Size.Small"
+                                                               StartIcon="@Icons.Material.Filled.Delete"
+                                                               OnClick="@(() => RemoveItem(item))"
+                                                               Class="remove-btn">
+                                                        Remove
+                                                    </MudButton>
+                                                </div>
+                                            </MudItem>
+                                        </MudGrid>
+                                    </MudCardContent>
+                                </MudCard>
+                            }
+                        </div>
                     </MudItem>
 
-                    <MudItem xs="12" md="4">
-                        <MudCard>
-                            <MudCardContent>
-                                <MudText Typo="Typo.h5" Class="mb-3">Order Summary</MudText>
+                    <!-- Order Summary Section -->
+                    <MudItem xs="12" lg="4">
+                        <div class="summary-card">
+                            <MudCardContent Class="py-4">
+                                <MudText Typo="Typo.h5" Class="section-title mb-4">Order Summary</MudText>
 
-                                <div class="d-flex justify-space-between mb-2">
-                                    <MudText Typo="Typo.body1">Items (@cartService.CurrentCart.TotalItems):</MudText>
-                                    <MudText Typo="Typo.body1">€@cartService.CurrentCart.TotalPrice</MudText>
+                                <!-- Items Subtotal -->
+                                <div class="d-flex justify-space-between align-center mb-3">
+                                    <MudText Typo="Typo.body1">Subtotal (@cartService.CurrentCart.TotalItems items):</MudText>
+                                    <MudText Typo="Typo.body1" Class="font-weight-bold">€@cartService.CurrentCart.TotalPrice.ToString("F2")</MudText>
                                 </div>
 
-                                <div class="d-flex justify-space-between mb-2">
+                                <!-- Shipping -->
+                                <div class="d-flex justify-space-between align-center mb-3">
                                     <MudText Typo="Typo.body1">Shipping:</MudText>
-                                    <MudText Typo="Typo.body1">€5.00</MudText>
+                                    <MudText Typo="Typo.body1" Class="font-weight-bold">€5.00</MudText>
                                 </div>
 
-                                <MudDivider Class="my-3" />
+                                <MudDivider Class="my-4" />
 
-                                <div class="d-flex justify-space-between">
+                                <!-- Total -->
+                                <div class="d-flex justify-space-between align-center mb-4">
                                     <MudText Typo="Typo.h6">Total:</MudText>
-                                    <MudText Typo="Typo.h6">€@(cartService.CurrentCart.TotalPrice + 5.00m)</MudText>
+                                    <MudText Typo="Typo.h5" Class="total-price">
+                                        €@((cartService.CurrentCart.TotalPrice + 5.00m).ToString("F2"))
+                                    </MudText>
                                 </div>
 
+                                <!-- Checkout Button -->
                                 <MudButton Variant="Variant.Filled"
                                            Color="Color.Primary"
                                            FullWidth="true"
-                                           Class="mt-4"
-                                           OnClick="ProceedToCheckout">
+                                           OnClick="ProceedToCheckout"
+                                           EndIcon="@Icons.Material.Filled.ArrowForward"
+                                           Size="MudBlazor.Size.Large"
+                                           Class="checkout-btn mb-3">
                                     Proceed to Checkout
                                 </MudButton>
 
+                                <!-- Continue Shopping -->
                                 <MudButton Variant="Variant.Text"
                                            Color="Color.Primary"
                                            FullWidth="true"
-                                           Class="mt-2"
-                                           OnClick="ContinueShopping">
+                                           OnClick="ContinueShopping"
+                                           StartIcon="@Icons.Material.Filled.ShoppingBag"
+                                           Size="MudBlazor.Size.Small">
                                     Continue Shopping
                                 </MudButton>
                             </MudCardContent>
-                        </MudCard>
+                        </div>
                     </MudItem>
                 </MudGrid>
             }
             else
             {
-                <div class="text-center py-8">
-                    <MudIcon Icon="@Icons.Material.Filled.ShoppingCart" Size="MudBlazor.Size.Large" Color="Color.Primary" Class="mb-3" />
-                    <MudText Typo="Typo.h4" Class="mb-3">Your cart is empty</MudText>
-                    <MudText Typo="Typo.body1" Color="Color.Info" Class="mb-4">
-                        Looks like you haven't added any items to your cart yet.
-                    </MudText>
-                    <MudButton Variant="Variant.Filled"
-                               Color="Color.Primary"
-                               OnClick="ContinueShopping"
-                               StartIcon="@Icons.Material.Filled.ShoppingBag">
-                        Start Shopping
-                    </MudButton>
-                </div>
+                <!-- Empty Cart State -->
+                <MudCard Class="empty-state">
+                    <MudCardContent>
+                        <div class="mb-4" style="font-size: 64px; color: #e0e0e0;">
+                            <MudIcon Icon="@Icons.Material.Filled.ShoppingCart" />
+                        </div>
+                        <MudText Typo="Typo.h4" Class="mb-3" Color="Color.Primary">Your Cart is Empty</MudText>
+                        <MudText Typo="Typo.body1" Color="Color.Primary" Class="mb-4">
+                            Looks like you haven't added any items to your cart yet. Start exploring our collection!
+                        </MudText>
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Primary"
+                                   OnClick="ContinueShopping"
+                                   EndIcon="@Icons.Material.Filled.ArrowForward"
+                                   Class="px-5 py-3"
+                                   Style="border-radius: 10px;">
+                            Start Shopping
+                        </MudButton>
+                    </MudCardContent>
+                </MudCard>
             }
-
         </MudContainer>
     </Authorized>
     <NotAuthorized>
-        <MudContainer Class="text-center py-16">
-            <MudIcon Icon="@Icons.Material.Filled.ShoppingCart" Size="MudBlazor.Size.Large" Color="Color.Primary" Class="mb-4" />
-            <MudText Typo="Typo.h4" Class="mb-3">Authentication Required</MudText>
-            <MudText Typo="Typo.body1" Color="Color.Primary" Class="mb-4">
-                Please log in to view your shopping cart.
-            </MudText>
-            <MudButton Variant="Variant.Filled"
-                       Color="Color.Primary"
-                       OnClick="RedirectToLogin"
-                       StartIcon="@Icons.Material.Filled.Login">
-                Log In
-            </MudButton>
-        </MudContainer>
+        <!-- Matching the home page's unauthorized state -->
+        <div class="website-header">
+            <MudContainer MaxWidth="MaxWidth.Medium" Class="text-center py-16">
+                <MudIcon Icon="@Icons.Material.Filled.Lock" Size="MudBlazor.Size.Large" Color="Color.Tertiary" Class="mb-4" />
+                <MudText Typo="Typo.h4" Class="mb-3" Style="color: white;">Access Your Cart</MudText>
+                <MudText Typo="Typo.h6" Class="mb-4" Style="color: white; opacity: 0.9;">
+                    Please log in to view and manage your shopping cart
+                </MudText>
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Tertiary"
+                           OnClick="RedirectToLogin"
+                           StartIcon="@Icons.Material.Filled.Login"
+                           Style="color: #667eea;">
+                    Log In to View Cart
+                </MudButton>
+            </MudContainer>
+        </div>
     </NotAuthorized>
 </AuthorizeView>
 
 @code {
-
+    private User user;
     private List<Product> allProducts = new List<Product>();
 
     protected override async Task OnInitializedAsync()
     {
+        userService.OnUserChanged += OnUserChanged;
+        user = userService.currentUser;
+
         cartService.OnCartUpdated += StateHasChanged;
-
         allProducts = await productService.GetProductsAsync() ?? new List<Product>();
-
         StateHasChanged();
     }
 
@@ -183,16 +496,22 @@
         Navigation.NavigateTo("/login", true);
     }
 
+    private void OnUserChanged()
+    {
+        user = userService.currentUser;
+        StateHasChanged();
+    }
+
     private string GetProductCategory(int productId)
     {
-        // Find the product and return its actual category
         var product = allProducts.FirstOrDefault(p => p.ProductId == productId);
-        return product?.Category ?? "clothing"; // Default fallback
+        return product?.Category ?? "clothing";
     }
 
     private void IncreaseQuantity(CartItem item)
     {
         cartService.UpdateQuantity(item.ProductId, item.SelectedColor, item.SelectedSize, item.Quantity + 1);
+        Snackbar.Add($"Increased quantity for {item.ProductName}", Severity.Success);
     }
 
     private void DecreaseQuantity(CartItem item)
@@ -200,17 +519,42 @@
         if (item.Quantity > 1)
         {
             cartService.UpdateQuantity(item.ProductId, item.SelectedColor, item.SelectedSize, item.Quantity - 1);
+            Snackbar.Add($"Decreased quantity for {item.ProductName}", Severity.Info);
         }
     }
 
-    private void RemoveItem(CartItem item)
+    private async Task RemoveItem(CartItem item)
     {
-        cartService.RemoveFromCart(item.ProductId, item.SelectedColor, item.SelectedSize);
+        bool? result = await DialogService.ShowMessageBox(
+            "Remove Item",
+            $"Are you sure you want to remove {item.ProductName} from your cart?",
+            yesText: "Remove",
+            cancelText: "Keep"
+        );
+
+        if (result == true)
+        {
+            cartService.RemoveFromCart(item.ProductId, item.SelectedColor, item.SelectedSize);
+            Snackbar.Add($"{item.ProductName} removed from cart", Severity.Info);
+        }
     }
 
-    private void ClearCart()
+    private async Task ClearCart()
     {
-        cartService.ClearCart();
+        if (!cartService.CurrentCart.Items.Any()) return;
+
+        bool? result = await DialogService.ShowMessageBox(
+            "Clear Cart",
+            "Are you sure you want to remove all items from your cart?",
+            yesText: "Clear Cart",
+            cancelText: "Cancel"
+        );
+
+        if (result == true)
+        {
+            cartService.ClearCart();
+            Snackbar.Add("Cart cleared successfully", Severity.Success);
+        }
     }
 
     private void ContinueShopping()
@@ -220,11 +564,19 @@
 
     private void ProceedToCheckout()
     {
-        Navigation.NavigateTo("/checkout");
+        if (cartService.CurrentCart.Items.Any())
+        {
+            Navigation.NavigateTo("/checkout");
+        }
+        else
+        {
+            Snackbar.Add("Your cart is empty. Add some items before checkout.", Severity.Warning);
+        }
     }
 
     public void Dispose()
     {
+        userService.OnUserChanged -= OnUserChanged;
         cartService.OnCartUpdated -= StateHasChanged;
     }
 }

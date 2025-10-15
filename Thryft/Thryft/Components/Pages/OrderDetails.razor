@@ -1,0 +1,658 @@
+﻿@page "/order-details/{orderId:int}"
+@using Microsoft.AspNetCore.Components.Authorization
+@using Thryft.Models
+@using Thryft.Services
+
+@inject OrderService orderService
+@inject ProductIconService productIconService
+@inject NavigationManager Navigation
+@inject ProductService productService
+@inject UserService userService
+@inject ISnackbar Snackbar
+
+@rendermode InteractiveServer
+@inject IDialogService DialogService
+
+<style>
+    .website-header {
+        background: linear-gradient(135deg, #ffa396 20%, #eb8691 100%);
+        color: white;
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+    }
+
+    .order-details-container {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        border: 1px solid #e8e8e8;
+        overflow: hidden;
+    }
+
+    .order-header {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-bottom: 1px solid #e0e0e0;
+        padding: 24px;
+    }
+
+    .order-item {
+        border-bottom: 1px solid #f5f5f5;
+        padding: 20px 24px;
+        transition: background-color 0.2s ease;
+    }
+
+        .order-item:hover {
+            background-color: #fafafa;
+        }
+
+        .order-item:last-child {
+            border-bottom: none;
+        }
+
+    .product-icon-container {
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px;
+        margin-right: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .status-chip {
+        border-radius: 20px;
+        padding: 8px 16px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .section-title {
+        position: relative;
+        padding-bottom: 12px;
+        margin-bottom: 20px;
+    }
+
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(90deg, #1976d2 0%, #42a5f5 100%);
+            border-radius: 3px;
+        }
+
+    .info-card {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 20px;
+        border: 1px solid #e9ecef;
+    }
+
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+    .detail-badge {
+        background-color: #e3f2fd;
+        padding: 6px 12px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        color: #1565c0;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        margin-right: 8px;
+    }
+
+    .price-highlight {
+        font-weight: 700;
+        color: #1976d2;
+        font-size: 1.1rem;
+    }
+
+    .loading-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 400px;
+    }
+
+    .not-found-container {
+        text-align: center;
+        padding: 80px 20px;
+    }
+
+    .timeline {
+        position: relative;
+        padding-left: 30px;
+    }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 15px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #e0e0e0;
+        }
+
+    .timeline-item {
+        position: relative;
+        margin-bottom: 20px;
+    }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -23px;
+            top: 5px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #1976d2;
+            border: 2px solid white;
+        }
+
+        .timeline-item.active::before {
+            background: #4caf50;
+            box-shadow: 0 0 0 2px #4caf50;
+        }
+
+        .timeline-item.completed::before {
+            background: #4caf50;
+        }
+</style>
+
+<PageTitle>Thryft - Order #@OrderId Details</PageTitle>
+
+<AuthorizeView>
+    <Authorized>
+        <!-- Hero Header matching other pages -->
+        <div class="website-header">
+            <MudContainer MaxWidth="MaxWidth.Large">
+                <div class="hero-section">
+                    <MudText Typo="Typo.h3" Class="mb-3" Style="font-weight: 700;">
+                        Order Details
+                    </MudText>
+                    <MudText Typo="Typo.h6" Class="mb-4" Style="opacity: 0.9;">
+                        Track your order and view detailed information
+                    </MudText>
+                </div>
+            </MudContainer>
+        </div>
+
+        <MudContainer MaxWidth="MaxWidth.Large" Class="my-6">
+            @if (loading)
+            {
+                <div class="loading-container">
+                    <MudProgressCircular Indeterminate="true" Color="Color.Primary" Size="MudBlazor.Size.Large" />
+                </div>
+            }
+            else if (order == null)
+            {
+                <div class="not-found-container">
+                    <MudIcon Icon="@Icons.Material.Filled.ErrorOutline" Size="MudBlazor.Size.Large" Color="Color.Warning" Class="mb-4" />
+                    <MudText Typo="Typo.h4" Class="mb-3">Order Not Found</MudText>
+                    <MudText Typo="Typo.body1" Color="Color.Primary" Class="mb-4">
+                        The order you're looking for doesn't exist or you don't have permission to view it.
+                    </MudText>
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               OnClick="NavigateToOrders"
+                               StartIcon="@Icons.Material.Filled.ArrowBack">
+                        Back to Orders
+                    </MudButton>
+                </div>
+            }
+            else
+            {
+                <MudGrid Spacing="4">
+                    <!-- Main Order Details -->
+                    <MudItem xs="12" lg="8">
+                        <div class="order-details-container">
+                            <!-- Order Header -->
+                            <div class="order-header">
+                                <MudGrid Spacing="4">
+                                    <MudItem xs="12" sm="8">
+                                        <div class="d-flex flex-column">
+                                            <MudText Typo="Typo.h4" Class="mb-2">
+                                                <MudIcon Icon="@Icons.Material.Filled.Receipt" Class="mr-2" />
+                                                Order #@order.OrderId
+                                            </MudText>
+                                            <MudText Typo="Typo.body2" Color="Color.Primary" Class="mb-1">
+                                                <MudIcon Icon="@Icons.Material.Filled.CalendarToday" Size="MudBlazor.Size.Small" Class="mr-1" />
+                                                Placed on @order.Created.ToString("MMMM dd, yyyy 'at' h:mm tt")
+                                            </MudText>
+                                            <div class="d-flex align-center mt-2">
+                                                <div class="status-chip @GetStatusClass(order.Status)">
+                                                    @GetStatusText(order.Status)
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </MudItem>
+                                    <MudItem xs="12" sm="4" Class="d-flex align-center justify-sm-end">
+                                        <MudText Typo="Typo.h4" Class="price-highlight">
+                                            €@order.Total.ToString("F2")
+                                        </MudText>
+                                    </MudItem>
+                                </MudGrid>
+                            </div>
+
+                            <!-- Order Items -->
+                            <MudCardContent Class="pa-0">
+                                <div class="px-4 pt-4">
+                                    <MudText Typo="Typo.h6" Class="section-title">Order Items</MudText>
+                                </div>
+
+                                @if (order.OrderItems?.Any() == true)
+                                {
+                                    @foreach (var item in order.OrderItems)
+                                    {
+                                        <div class="order-item">
+                                            <MudGrid Spacing="4" AlignItems="AlignItems.Center">
+                                                <MudItem xs="12" sm="2" Class="d-flex align-center justify-center">
+                                                    <div class="product-icon-container">
+                                                        <i class="@productIconService.GetProductIcon(GetProductCategory(item.ProductId), item.SelectedColour)"
+                                                           style="@productIconService.GetColorStyle(item.SelectedColour) font-size: 32px;"></i>
+                                                    </div>
+                                                </MudItem>
+                                                <MudItem xs="12" sm="5">
+                                                    <div class="d-flex flex-column">
+                                                        <MudText Typo="Typo.h6" Class="product-name mb-2">
+                                                            @GetProductName(item.ProductId)
+                                                        </MudText>
+                                                        <div class="d-flex flex-wrap gap-2">
+                                                            @if (item.SelectedColour.HasValue)
+                                                            {
+                                                                <div class="detail-badge">
+                                                                    <MudIcon Icon="@Icons.Material.Filled.Palette" Size="MudBlazor.Size.Small" Class="mr-1" />
+                                                                    @item.SelectedColour.Value
+                                                                </div>
+                                                            }
+                                                            @if (item.SelectedSize.HasValue)
+                                                            {
+                                                                <div class="detail-badge">
+                                                                    <MudIcon Icon="@Icons.Material.Filled.Straighten" Size="MudBlazor.Size.Small" Class="mr-1" />
+                                                                    @item.SelectedSize.Value
+                                                                </div>
+                                                            }
+                                                        </div>
+                                                    </div>
+                                                </MudItem>
+                                                <MudItem xs="6" sm="2" Class="d-flex align-center">
+                                                    <MudText Typo="Typo.body1" Class="font-weight-bold">
+                                                        Qty: @item.Quantity
+                                                    </MudText>
+                                                </MudItem>
+                                                <MudItem xs="6" sm="3" Class="d-flex align-center justify-end">
+                                                    <MudText Typo="Typo.h6" Color="Color.Primary">
+                                                        €@((item.UnitPrice * item.Quantity).ToString("F2"))
+                                                    </MudText>
+                                                </MudItem>
+                                            </MudGrid>
+                                        </div>
+                                    }
+                                }
+                                else
+                                {
+                                    <div class="px-4 py-6 text-center">
+                                        <MudText Typo="Typo.body1" Color="Color.Warning">
+                                            No items found in this order.
+                                        </MudText>
+                                    </div>
+                                }
+                            </MudCardContent>
+                        </div>
+
+                        <!-- Order Timeline -->
+                        <MudCard Class="mt-4">
+                            <MudCardContent>
+                                <MudText Typo="Typo.h6" Class="section-title">Order Status Timeline</MudText>
+                                <div class="timeline">
+                                    <div class="timeline-item @(order.Status == "Processing" || order.Status == "Shipped" || order.Status == "Completed" ? "completed" : "") @(order.Status == "Processing" ? "active" : "")">
+                                        <MudText Typo="Typo.subtitle2" Class="mb-1">Order Placed</MudText>
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                            @order.Created.ToString("MMMM dd, yyyy 'at' h:mm tt")
+                                        </MudText>
+                                    </div>
+
+                                    <div class="timeline-item @(order.Status == "Shipped" || order.Status == "Completed" ? "completed" : "") @(order.Status == "Shipped" ? "active" : "")">
+                                        <MudText Typo="Typo.subtitle2" Class="mb-1">Order Shipped</MudText>
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                            @(order.Status == "Shipped" || order.Status == "Completed" ? "Shipped on " + order.Created.AddDays(1).ToString("MMMM dd, yyyy") : "Pending")
+                                        </MudText>
+                                    </div>
+
+                                    <div class="timeline-item @(order.Status == "Completed" ? "completed" : "") @(order.Status == "Completed" ? "active" : "")">
+                                        <MudText Typo="Typo.subtitle2" Class="mb-1">Order Delivered</MudText>
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                            @(order.Status == "Completed" ? "Delivered on " + order.Created.AddDays(3).ToString("MMMM dd, yyyy") : "Pending")
+                                        </MudText>
+                                    </div>
+                                </div>
+                            </MudCardContent>
+                        </MudCard>
+                    </MudItem>
+
+                    <!-- Order Summary & Actions -->
+                    <MudItem xs="12" lg="4">
+                        <!-- Order Summary -->
+                        <MudCard Class="mb-4">
+                            <MudCardContent>
+                                <MudText Typo="Typo.h6" Class="section-title">Order Summary</MudText>
+
+                                <div class="info-card">
+                                    <div class="info-row">
+                                        <MudText Typo="Typo.body2">Subtotal:</MudText>
+                                        <MudText Typo="Typo.body2" Class="font-weight-bold">
+                                            €@order.Total.ToString("F2")
+                                        </MudText>
+                                    </div>
+                                    <div class="info-row">
+                                        <MudText Typo="Typo.body2">Shipping:</MudText>
+                                        <MudText Typo="Typo.body2" Class="font-weight-bold">€5.00</MudText>
+                                    </div>
+                                    <div class="info-row">
+                                        <MudText Typo="Typo.body2">Tax:</MudText>
+                                        <MudText Typo="Typo.body2" Class="font-weight-bold">€0.00</MudText>
+                                    </div>
+                                    <div class="info-row">
+                                        <MudText Typo="Typo.h6">Total:</MudText>
+                                        <MudText Typo="Typo.h6" Class="price-highlight">
+                                            €@((order.Total + 5.00m).ToString("F2"))
+                                        </MudText>
+                                    </div>
+                                </div>
+                            </MudCardContent>
+                        </MudCard>
+
+                        <!-- Order Information -->
+                        <MudCard Class="mb-4">
+                            <MudCardContent>
+                                <MudText Typo="Typo.h6" Class="section-title">Order Information</MudText>
+
+                                <div class="info-card">
+                                    <div class="info-row">
+                                        <MudText Typo="Typo.body2">Order ID:</MudText>
+                                        <MudText Typo="Typo.body2" Class="font-weight-bold">#@order.OrderId</MudText>
+                                    </div>
+                                    <div class="info-row">
+                                        <MudText Typo="Typo.body2">Order Date:</MudText>
+                                        <MudText Typo="Typo.body2" Class="font-weight-bold">
+                                            @order.Created.ToString("MMM dd, yyyy")
+                                        </MudText>
+                                    </div>
+                                    <div class="info-row">
+                                        <MudText Typo="Typo.body2">Order Status:</MudText>
+                                        <div class="status-chip @GetStatusClass(order.Status)">
+                                            @GetStatusText(order.Status)
+                                        </div>
+                                    </div>
+                                    <div class="info-row">
+                                        <MudText Typo="Typo.body2">Items:</MudText>
+                                        <MudText Typo="Typo.body2" Class="font-weight-bold">
+                                            @(order.OrderItems?.Count ?? 0)
+                                        </MudText>
+                                    </div>
+                                </div>
+                            </MudCardContent>
+                        </MudCard>
+
+                        <!-- Actions -->
+                        <MudCard>
+                            <MudCardContent>
+                                <MudText Typo="Typo.h6" Class="section-title">Actions</MudText>
+
+                                <div class="d-flex flex-column gap-3">
+                                    <MudButton Variant="Variant.Filled"
+                                               Color="Color.Primary"
+                                               FullWidth="true"
+                                               OnClick="NavigateToOrders"
+                                               StartIcon="@Icons.Material.Filled.List">
+                                        Back to Orders
+                                    </MudButton>
+
+                                    <MudButton Variant="Variant.Outlined"
+                                               Color="Color.Primary"
+                                               FullWidth="true"
+                                               OnClick="ContinueShopping"
+                                               StartIcon="@Icons.Material.Filled.ShoppingBag">
+                                        Continue Shopping
+                                    </MudButton>
+
+                                    @if (order.Status == "Processing")
+                                    {
+                                        <MudButton Variant="Variant.Outlined"
+                                                   Color="Color.Error"
+                                                   FullWidth="true"
+                                                   OnClick="@(() => CancelOrder(order))"
+                                                   StartIcon="@Icons.Material.Filled.Cancel">
+                                            Cancel Order
+                                        </MudButton>
+                                    }
+                                </div>
+                            </MudCardContent>
+                        </MudCard>
+                    </MudItem>
+                </MudGrid>
+            }
+        </MudContainer>
+    </Authorized>
+    <NotAuthorized>
+        <!-- Matching the home page's unauthorized state -->
+        <div class="website-header">
+            <MudContainer MaxWidth="MaxWidth.Medium" Class="text-center py-16">
+                <MudIcon Icon="@Icons.Material.Filled.Lock" Size="MudBlazor.Size.Large" Color="Color.Tertiary" Class="mb-4" />
+                <MudText Typo="Typo.h4" Class="mb-3" Style="color: white;">Authentication Required</MudText>
+                <MudText Typo="Typo.h6" Class="mb-4" Style="color: white; opacity: 0.9;">
+                    Please log in to view order details
+                </MudText>
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Tertiary"
+                           OnClick="RedirectToLogin"
+                           StartIcon="@Icons.Material.Filled.Login"
+                           Style="color: #667eea;">
+                    Log In
+                </MudButton>
+            </MudContainer>
+        </div>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    [Parameter] public int OrderId { get; set; }
+
+    private User user;
+    private Order order;
+    private bool loading = true;
+    private Dictionary<int, string> _productNames = new Dictionary<int, string>();
+    private Dictionary<int, string> _productCategories = new Dictionary<int, string>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        userService.OnUserChanged += OnUserChanged;
+        user = userService.currentUser;
+
+        await LoadOrderDetails();
+    }
+
+    private void RedirectToLogin()
+    {
+        Navigation.NavigateTo("/login", true);
+    }
+
+    private void OnUserChanged()
+    {
+        user = userService.currentUser;
+        StateHasChanged();
+    }
+
+    private async Task LoadOrderDetails()
+    {
+        loading = true;
+        StateHasChanged();
+
+        try
+        {
+            order = await orderService.GetOrderByIdAsync(OrderId);
+
+            if (order != null)
+            {
+                await LoadProductDetails();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading order details: {ex.Message}");
+            Snackbar.Add("Error loading order details. Please try again.", Severity.Error);
+        }
+        finally
+        {
+            loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadProductDetails()
+    {
+        try
+        {
+            var allProducts = await productService.GetProductsAsync();
+
+            foreach (var item in order.OrderItems)
+            {
+                if (!_productNames.ContainsKey(item.ProductId))
+                {
+                    var product = allProducts.FirstOrDefault(p => p.ProductId == item.ProductId);
+
+                    if (product != null)
+                    {
+                        _productNames[item.ProductId] = product.ProductName;
+                        _productCategories[item.ProductId] = product.Category;
+                    }
+                    else
+                    {
+                        _productNames[item.ProductId] = $"Product #{item.ProductId}";
+                        _productCategories[item.ProductId] = "clothing";
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading product details: {ex.Message}");
+            // Fallback
+            foreach (var item in order.OrderItems)
+            {
+                if (!_productNames.ContainsKey(item.ProductId))
+                {
+                    _productNames[item.ProductId] = $"Product #{item.ProductId}";
+                    _productCategories[item.ProductId] = "clothing";
+                }
+            }
+        }
+    }
+
+    private string GetProductName(int productId)
+    {
+        return _productNames.ContainsKey(productId) ? _productNames[productId] : $"Product #{productId}";
+    }
+
+    private string GetProductCategory(int productId)
+    {
+        return _productCategories.ContainsKey(productId) ? _productCategories[productId] : "clothing";
+    }
+
+    private string GetStatusClass(string status)
+    {
+        return status.ToLower() switch
+        {
+            "completed" => "mud-theme-success",
+            "processing" => "mud-theme-warning",
+            "shipped" => "mud-theme-info",
+            "cancelled" => "mud-theme-error",
+            _ => "mud-theme-secondary"
+        };
+    }
+
+    private string GetStatusText(string status)
+    {
+        return status switch
+        {
+            "Completed" => "✓ Completed",
+            "Processing" => "⏳ Processing",
+            "Shipped" => "🚚 Shipped",
+            "Cancelled" => "❌ Cancelled",
+            _ => status
+        };
+    }
+
+    private async Task CancelOrder(Order order)
+    {
+        var parameters = new DialogParameters
+        {
+            { "Content", $"Are you sure you want to cancel Order #{order.OrderId}? This action cannot be undone." },
+            { "ButtonColor", Color.Error },
+            { "Variant", Variant.Filled }
+        };
+
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small };
+
+        var dialog = DialogService.Show<MudDialog>("Cancel Order", parameters, options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            try
+            {
+                var success = await orderService.CancelOrderAsync(order.OrderId);
+
+                if (success)
+                {
+                    Snackbar.Add($"Order #{order.OrderId} has been cancelled successfully.", Severity.Success);
+                    await LoadOrderDetails(); // Refresh the order details
+                }
+                else
+                {
+                    Snackbar.Add($"Failed to cancel order #{order.OrderId}. Please try again.", Severity.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error cancelling order: {ex.Message}");
+                Snackbar.Add("An error occurred while cancelling the order.", Severity.Error);
+            }
+        }
+    }
+
+    private void NavigateToOrders()
+    {
+        Navigation.NavigateTo("/orders");
+    }
+
+    private void ContinueShopping()
+    {
+        Navigation.NavigateTo("/home");
+    }
+
+    public void Dispose()
+    {
+        userService.OnUserChanged -= OnUserChanged;
+    }
+}
