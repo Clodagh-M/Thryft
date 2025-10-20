@@ -210,10 +210,20 @@
 
     .controls-bar {
         background: white;
-        padding: 1rem;
-        border-radius: 10px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        margin-bottom: 1rem !important;
+        padding: 1.5rem;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        margin-bottom: 1.5rem !important;
+        border: 1px solid #e8e8e8;
+    }
+
+    .filter-section {
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        border: 1px solid #e8e8e8;
+        margin-bottom: 24px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     }
 </style>
 
@@ -279,11 +289,77 @@
                     </MudButton>
                 </MudItem>
 
+                <!-- Filters and Search Section -->
+                @if (_orders.Any())
+                {
+                    <MudItem xs="12">
+                        <div class="filter-section">
+                            <MudGrid Spacing="3">
+                                <MudItem xs="12" Class="d-flex align-center justify-space-between mb-4">
+                                    <MudText Typo="Typo.h4">Order Management</MudText>
+                                    <MudButton Variant="Variant.Filled"
+                                               Color="Color.Primary"
+                                               OnClick="RefreshOrders"
+                                               StartIcon="@Icons.Material.Filled.Refresh">
+                                        Refresh
+                                    </MudButton>
+                                </MudItem>
+                                <MudItem xs="12" sm="6" md="3">
+                                    <MudSelect T="string" @bind-Value="_statusFilter" Variant="Variant.Outlined">
+                                        <MudSelectItem Value="@STATUS_ALL">All Statuses</MudSelectItem>
+                                        <MudSelectItem Value="@STATUS_PROCESSING">Processing</MudSelectItem>
+                                        <MudSelectItem Value="@STATUS_SHIPPED">Shipped</MudSelectItem>
+                                        <MudSelectItem Value="@STATUS_COMPLETED">Completed</MudSelectItem>
+                                        <MudSelectItem Value="@STATUS_CANCELLED">Cancelled</MudSelectItem>
+                                    </MudSelect>
+                                </MudItem>
+                                <MudItem xs="12" sm="6" md="3">
+                                    <MudTextField @bind-Value="_searchTerm"
+                                                  Placeholder="Search Order ID..."
+                                                  Variant="Variant.Outlined"
+                                                  Adornment="Adornment.Start"
+                                                  AdornmentIcon="@Icons.Material.Filled.Search"
+                                                  Immediate="true" />
+                                </MudItem>
+                                <MudItem xs="12" sm="6" md="3">
+                                    <MudSelect T="string" @bind-Value="_sortBy" Variant="Variant.Outlined">
+                                        <MudSelectItem Value="@SORT_NEWEST">Newest First</MudSelectItem>
+                                        <MudSelectItem Value="@SORT_OLDEST">Oldest First</MudSelectItem>
+                                        <MudSelectItem Value="@SORT_TOTAL_HIGH">Total: High to Low</MudSelectItem>
+                                        <MudSelectItem Value="@SORT_TOTAL_LOW">Total: Low to High</MudSelectItem>
+                                    </MudSelect>
+                                </MudItem>
+                                <MudItem xs="12" sm="6" md="3" Class="d-flex align-end">
+                                    <MudButton Variant="Variant.Outlined"
+                                               Color="Color.Info"
+                                               OnClick="ClearFilters"
+                                               FullWidth="true"
+                                               StartIcon="@Icons.Material.Filled.Clear">
+                                        Clear Filters
+                                    </MudButton>
+                                </MudItem>
+                            </MudGrid>
+
+                            <!-- Results Count -->
+                            <MudText Typo="Typo.caption" Color="Color.Primary" Class="mt-2">
+                                @if (_filteredOrders.Count != _orders.Count)
+                                {
+                                    <span>Showing @_filteredOrders.Count of @_orders.Count orders</span>
+                                }
+                                else
+                                {
+                                    <span>Showing all @_orders.Count orders</span>
+                                }
+                            </MudText>
+                        </div>
+                    </MudItem>
+                }
+
                 <MudItem xs="12">
-                    @if (_orders.Any())
+                    @if (_filteredOrders.Any())
                     {
                         <div class="orders-container">
-                            @foreach (var order in _orders.OrderByDescending(o => o.Created))
+                            @foreach (var order in _filteredOrders)
                             {
                                 <MudCard Class="order-card">
                                     <!-- Order Header -->
@@ -404,10 +480,29 @@
                                 <div class="mb-4" style="font-size: 64px; color: #e0e0e0;">
                                     <MudIcon Icon="@Icons.Material.Filled.ShoppingBag" />
                                 </div>
-                                <MudText Typo="Typo.h4" Class="mb-3" Color="Color.Primary">No Orders Yet</MudText>
-                                <MudText Typo="Typo.body1" Color="Color.Primary" Class="mb-4">
-                                    You haven't placed any orders yet. Start shopping to see your orders here!
+                                <MudText Typo="Typo.h4" Class="mb-3" Color="Color.Primary">
+                                    @(_orders.Any() ? "No Orders Match Your Filters" : "No Orders Yet")
                                 </MudText>
+                                <MudText Typo="Typo.body1" Color="Color.Primary" Class="mb-4">
+                                    @if (_orders.Any())
+                                    {
+                                        <span>No orders match your current filters. Try adjusting your search criteria.</span>
+                                    }
+                                    else
+                                    {
+                                        <span>You haven't placed any orders yet. Start shopping to see your orders here!</span>
+                                    }
+                                </MudText>
+                                @if (_orders.Any())
+                                {
+                                    <MudButton Variant="Variant.Outlined"
+                                               Color="Color.Primary"
+                                               OnClick="ClearFilters"
+                                               StartIcon="@Icons.Material.Filled.ClearAll"
+                                               Class="mr-2">
+                                        Clear Filters
+                                    </MudButton>
+                                }
                                 <MudButton Variant="Variant.Filled"
                                            Color="Color.Primary"
                                            OnClick="ContinueShopping"
@@ -445,12 +540,28 @@
 </AuthorizeView>
 
 @code {
-    
     private User user;
-
     private List<Order> _orders = new List<Order>();
+    private List<Order> _filteredOrders = new List<Order>();
     private Dictionary<int, string> _productNames = new Dictionary<int, string>();
     private Dictionary<int, string> _productCategories = new Dictionary<int, string>();
+
+    // Filter and search state
+    private string _statusFilter = "";
+    private string _searchTerm = "";
+    private string _sortBy = "newest";
+
+    // Constants for filter options
+    private const string STATUS_ALL = "";
+    private const string STATUS_PROCESSING = "Processing";
+    private const string STATUS_SHIPPED = "Shipped";
+    private const string STATUS_COMPLETED = "Completed";
+    private const string STATUS_CANCELLED = "Cancelled";
+
+    private const string SORT_NEWEST = "newest";
+    private const string SORT_OLDEST = "oldest";
+    private const string SORT_TOTAL_HIGH = "total_high";
+    private const string SORT_TOTAL_LOW = "total_low";
 
     protected override async Task OnInitializedAsync()
     {
@@ -464,6 +575,7 @@
 
         await LoadOrders();
     }
+
     private void RedirectToLogin()
     {
         Navigation.NavigateTo("/login", true);
@@ -479,16 +591,19 @@
     {
         try
         {
-            // Assuming you have a method to get orders for the current user
-            // You might need to pass the current user ID here
-            _orders = await orderService.GetUserOrdersAsync(user.UserId) ?? new List<Order>(); // Replace with actual user ID
+            _orders = await orderService.GetUserOrdersAsync(user.UserId) ?? new List<Order>();
+
+            // Initialize filtered orders with all orders
+            _filteredOrders = _orders.ToList();
 
             // Load product names and categories for display
             await LoadProductDetails();
+
+            // Apply initial sorting (newest first by default)
+            ApplyFilters();
         }
         catch (Exception ex)
         {
-            // Handle error - you might want to show an error message
             Console.WriteLine($"Error loading orders: {ex.Message}");
         }
     }
@@ -497,7 +612,6 @@
     {
         try
         {
-            // Get all products from the product service
             var allProducts = await productService.GetProductsAsync();
 
             foreach (var order in _orders)
@@ -506,7 +620,6 @@
                 {
                     if (!_productNames.ContainsKey(item.ProductId))
                     {
-                        // Find the product in the list
                         var product = allProducts.FirstOrDefault(p => p.ProductId == item.ProductId);
 
                         if (product != null)
@@ -516,7 +629,6 @@
                         }
                         else
                         {
-                            // Fallback if product not found
                             _productNames[item.ProductId] = $"Product #{item.ProductId}";
                             _productCategories[item.ProductId] = "clothing";
                         }
@@ -527,7 +639,6 @@
         catch (Exception ex)
         {
             Console.WriteLine($"Error loading product details: {ex.Message}");
-            // Fallback to mock data if there's an error
             foreach (var order in _orders)
             {
                 foreach (var item in order.OrderItems)
@@ -540,6 +651,63 @@
                 }
             }
         }
+    }
+
+    private void ApplyFilters()
+    {
+        IEnumerable<Order> filtered = _orders.AsEnumerable();
+
+        // Apply status filter
+        if (!string.IsNullOrEmpty(_statusFilter))
+        {
+            filtered = filtered.Where(o => o.Status == _statusFilter);
+        }
+
+        // Apply search filter
+        if (!string.IsNullOrEmpty(_searchTerm))
+        {
+            filtered = filtered.Where(o =>
+                o.OrderId.ToString().Contains(_searchTerm, StringComparison.OrdinalIgnoreCase));
+        }
+
+        // Apply sorting
+        filtered = _sortBy switch
+        {
+            SORT_OLDEST => filtered.OrderBy(o => o.Created),
+            SORT_TOTAL_HIGH => filtered.OrderByDescending(o => o.Total),
+            SORT_TOTAL_LOW => filtered.OrderBy(o => o.Total),
+            _ => filtered.OrderByDescending(o => o.Created) // newest first
+        };
+
+        _filteredOrders = filtered.ToList();
+        StateHasChanged();
+    }
+
+    private void ClearFilters()
+    {
+        _statusFilter = "";
+        _searchTerm = "";
+        _sortBy = SORT_NEWEST;
+        ApplyFilters();
+    }
+
+    // Event handlers for filter changes
+    private void OnStatusFilterChanged(string value)
+    {
+        _statusFilter = value;
+        ApplyFilters();
+    }
+
+    private void OnSearchTermChanged(string value)
+    {
+        _searchTerm = value;
+        ApplyFilters();
+    }
+
+    private void OnSortByChanged(string value)
+    {
+        _sortBy = value;
+        ApplyFilters();
     }
 
     private string GetProductName(int productId)
@@ -585,18 +753,12 @@
     {
         try
         {
-            // Call the order service to cancel the order
             var success = await orderService.CancelOrderAsync(order.OrderId);
 
             if (success)
             {
-                // Restore inventory for cancelled items
                 inventoryService.RestoreInventoryOrder(order);
-
-                // Show success message
                 Snackbar.Add($"Order #{order.OrderId} has been cancelled successfully.", Severity.Success);
-
-                // Reload orders to reflect the changes
                 await LoadOrders();
                 StateHasChanged();
             }
@@ -615,5 +777,15 @@
     private void ContinueShopping()
     {
         Navigation.NavigateTo("/home");
+    }
+
+    private async Task RefreshOrders()
+    {
+        await LoadOrders();
+    }
+
+    public void Dispose()
+    {
+        userService.OnUserChanged -= OnUserChanged;
     }
 }
