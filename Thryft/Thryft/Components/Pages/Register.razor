@@ -92,15 +92,16 @@
             // Ignore during prerendering
         }
         navigationManager.NavigateTo("/", true);
-    
+
     }
 
     private async Task HandleValidSubmit()
     {
-        success = true;
+        success = false;
 
         // Check if email already exists
-        var existing = await userService.GetUserAsync(model.Email);
+        var exists = model.Email.ToLower().Trim();
+        var existing = await userService.GetUserAsync(exists);
         if (existing != null)
         {
             message = "Email already exists";
@@ -113,7 +114,7 @@
         var user = new User
         {
             Name = model.Username,
-            Email = model.Email,
+            Email = exists,
             Password = model.Password
         };
 
