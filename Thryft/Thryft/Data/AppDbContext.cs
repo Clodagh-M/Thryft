@@ -32,7 +32,9 @@ public class AppDbContext : DbContext
         {
             entity.HasKey(e => e.OrderId);
             entity.Property(e => e.Total).HasColumnType("decimal(18,2)");
-            entity.Property(e => e.Created).HasDefaultValueSql("GETDATE()");
+            entity.Property(e => e.Created)
+                .HasDefaultValueSql("datetime('now')") // Changed from GETDATE()
+                .ValueGeneratedOnAdd();
             entity.Property(e => e.Status).HasMaxLength(50);
 
             // Relationship with User
@@ -42,22 +44,27 @@ public class AppDbContext : DbContext
                   .OnDelete(DeleteBehavior.Restrict);
         });
 
+        // For User entity
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("datetime('now')")
+                .ValueGeneratedOnAdd();
+
+            entity.Property(e => e.UpdatedAt)
+                .HasDefaultValueSql("datetime('now')")
+                .ValueGeneratedOnAddOrUpdate();
+        });
+
         modelBuilder.Entity<Address>(entity =>
         {
-            entity.HasKey(e => e.AddressId);
-            entity.Property(e => e.FullName).IsRequired();
-            entity.Property(e => e.AddressLine1).IsRequired();
-            entity.Property(e => e.City).IsRequired();
-            entity.Property(e => e.County).IsRequired();
-            entity.Property(e => e.Eircode).IsRequired();
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("datetime('now')");
-            entity.Property(e => e.UpdatedAt).HasDefaultValueSql("datetime('now')");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("datetime('now')")
+                .ValueGeneratedOnAdd();
 
-            // Relationship with User
-            entity.HasOne(a => a.User)
-                  .WithMany(u => u.Addresses)
-                  .HasForeignKey(a => a.UserId)
-                  .OnDelete(DeleteBehavior.Cascade);
+            entity.Property(e => e.UpdatedAt)
+                .HasDefaultValueSql("datetime('now')")
+                .ValueGeneratedOnAddOrUpdate();
         });
 
         // Configure OrderItem composite primary key
