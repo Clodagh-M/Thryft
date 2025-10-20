@@ -28,35 +28,56 @@ public class UserService
         _protectedLocalStorage = protectedLocalStorage;
         _authStateProvider = authStateProvider;
     }
-
-    // Call this method when you actually need to initialize (e.g., after render)
     public async Task InitializeAsync()
     {
-        if (_isInitialized) return;
+        if (_isInitialized)
+        {
+            Console.WriteLine("UserService already initialized");
+            return;
+        }
+
+        Console.WriteLine("Starting UserService initialization...");
 
         try
         {
             // Try to get user from local storage
             var storedUser = await _protectedLocalStorage.GetAsync<User>("currentUser");
+            Console.WriteLine($"Stored user retrieval successful: {storedUser.Success}");
+
             if (storedUser.Success && storedUser.Value != null)
             {
+                Console.WriteLine($"Found user in local storage: {storedUser.Value.Email}");
                 currentUser = storedUser.Value;
                 await _authStateProvider.MarkUserAsAuthenticated(currentUser);
                 OnUserChanged?.Invoke();
+                Console.WriteLine("User marked as authenticated");
+            }
+            else
+            {
+                Console.WriteLine("No user found in local storage");
             }
         }
-        catch (InvalidOperationException)
+        catch (InvalidOperationException ex)
         {
             // Ignore during prerendering
+            Console.WriteLine($"InvalidOperationException during initialization: {ex.Message}");
         }
-        catch (CryptographicException)
+        catch (CryptographicException ex)
         {
             // Local storage might be encrypted with different key, ignore
+            Console.WriteLine($"CryptographicException during initialization: {ex.Message}");
             await _protectedLocalStorage.DeleteAsync("currentUser");
+        }
+        catch (Exception ex)
+        {
+            // Log other exceptions but don't crash
+            Console.WriteLine($"Error initializing user service: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
         }
         finally
         {
             _isInitialized = true;
+            Console.WriteLine($"UserService initialization complete. _isInitialized = {_isInitialized}");
         }
     }
 
@@ -116,6 +137,7 @@ public class UserService
     public async Task<User> GetUserAsync(string email)
     {
         using var context = _contextFactory.CreateDbContext();
+        email = email.ToLower();
         currentUser = await context.Users.FirstOrDefaultAsync(u => u.Email == email);
         return currentUser;
     }

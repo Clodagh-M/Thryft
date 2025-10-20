@@ -1,5 +1,5 @@
 ﻿@using Microsoft.AspNetCore.Components.Authorization
-
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
 @using Thryft.Models
 @using Thryft.Services
 @inject CartService cartService
@@ -11,61 +11,72 @@
 
 <MudPopoverProvider />
 
+@if (!isInitialized)
+{
+    <MudAppBar Class="py-2" Style="z-index: 1300 !important;">
+        <MudSpacer />
+        <MudText>thryft</MudText>
+        <MudSpacer />
+        <MudProgressCircular Size="MudBlazor.Size.Small" Color="Color.Tertiary" />
+    </MudAppBar>
+}
+else
+{
+    <AuthorizeView>
+        <Authorized>
+            <MudAppBar Class="py-2" Style="z-index: 1300 !important;">
+                @if (user == null)
+                {
+                    <MudSpacer />
+                    <MudText @onclick="NavigateToHome">thryft</MudText>
+                    <MudSpacer />
+                    <MudButton Variant="Variant.Text" Color="Color.Tertiary" Href="/login">Login</MudButton>
+                }
+                else
+                {
+                    <MudIconButton Color="Color.Tertiary" Icon="@Icons.Material.Filled.Home" OnClick="NavigateToHome"></MudIconButton>
+                    <MudSpacer />
+                    <MudText @onclick="NavigateToHome">thryft</MudText>
+                    <MudSpacer />
+                    <MudText Class="pe-1"><b>Welcome</b> @GetFirstName(user.Name)</MudText>
 
-<AuthorizeView>
-    <Authorized>
-        <MudAppBar Class="py-2" Style="z-index: 1300 !important;">
-            @if (user == null)
-            {
-                <MudSpacer />
-                <MudText @onclick="NavigateToHome">thryft</MudText>
-                <MudSpacer />
-                <MudButton Variant="Variant.Text" Color="Color.Tertiary" Href="/login">Login</MudButton>
-            }
-            else
-            {
-                <MudIconButton Color="Color.Tertiary" Icon="@Icons.Material.Filled.Home" OnClick="NavigateToHome"></MudIconButton>
-                <MudSpacer />
-                <MudText @onclick="NavigateToHome">thryft</MudText>
-                <MudSpacer />
-                <MudText Class="pe-1"><b>Welcome</b> @GetFirstName(user.Name)</MudText>
-
-                <MudBadge Overlap="true" Color="Color.Dark" Content="@cartService.CurrentCart.TotalItems" Max="99">
-                    <MudIconButton Icon="@Icons.Material.Filled.ShoppingCart"
-                                   Href="/cart"
-                                   Color="Color.Tertiary" />
-                </MudBadge>
-                <MudMenu Color="Color.Tertiary" Class="ms-4" Icon="@Icons.Material.Filled.Person" Style="z-index: 15000">
-                    <MudMenuItem Onclick="NavigateToProfile">Profile</MudMenuItem>
-                    <MudMenuItem Onclick="NavigateToOrders">Orders</MudMenuItem>
-                    <MudDivider />
-                    <MudMenuItem Onclick="HandleLogout">Logout</MudMenuItem>
-                </MudMenu>
-            }
-        </MudAppBar>
-    </Authorized>
-    <NotAuthorized>
-        <MudContainer Class="text-center py-16">
-            <MudIcon Icon="@Icons.Material.Filled.Lock" Size="MudBlazor.Size.Large" Color="Color.Primary" Class="mb-4" />
-            <MudText Typo="Typo.h4" Class="mb-3">Access Required</MudText>
-            <MudText Typo="Typo.body1" Color="Color.Primary" Class="mb-4">
-                Please log in to browse our products.
-            </MudText>
-            <MudButton Variant="Variant.Filled"
-                       Color="Color.Primary"
-                       OnClick="RedirectToLogin"
-                       StartIcon="@Icons.Material.Filled.Login">
-                Log In
-            </MudButton>
-        </MudContainer>
-    </NotAuthorized>
-</AuthorizeView>
-
+                    <MudBadge Overlap="true" Color="Color.Dark" Content="@cartService.CurrentCart.TotalItems" Max="99">
+                        <MudIconButton Icon="@Icons.Material.Filled.ShoppingCart"
+                                       Href="/cart"
+                                       Color="Color.Tertiary" />
+                    </MudBadge>
+                    <MudMenu Color="Color.Tertiary" Class="ms-4" Icon="@Icons.Material.Filled.Person" Style="z-index: 15000">
+                        <MudMenuItem Onclick="NavigateToProfile">Profile</MudMenuItem>
+                        <MudMenuItem Onclick="NavigateToOrders">Orders</MudMenuItem>
+                        <MudDivider />
+                        <MudMenuItem Onclick="HandleLogout">Logout</MudMenuItem>
+                    </MudMenu>
+                }
+            </MudAppBar>
+        </Authorized>
+        <NotAuthorized>
+            <MudContainer Class="text-center py-16">
+                <MudIcon Icon="@Icons.Material.Filled.Lock" Size="MudBlazor.Size.Large" Color="Color.Primary" Class="mb-4" />
+                <MudText Typo="Typo.h4" Class="mb-3">Access Required</MudText>
+                <MudText Typo="Typo.body1" Color="Color.Primary" Class="mb-4">
+                    Please log in to browse our products.
+                </MudText>
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           OnClick="RedirectToLogin"
+                           StartIcon="@Icons.Material.Filled.Login">
+                    Log In
+                </MudButton>
+            </MudContainer>
+        </NotAuthorized>
+    </AuthorizeView>
+}
 
 @code {
     private User user;
+    private bool isInitialized = false;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         // Subscribe to cart updates so the badge updates in real-time
         cartService.OnCartUpdated += StateHasChanged;
@@ -73,8 +84,12 @@
         // Subscribe to user changes
         userService.OnUserChanged += OnUserChanged;
 
-        // Initialize user after userService is available
+        // Initialize user service
+        await userService.InitializeAsync();
+
+        // Get the current user after initialization
         user = userService.currentUser;
+        isInitialized = true;
 
         StateHasChanged();
     }
