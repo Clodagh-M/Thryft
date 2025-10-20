@@ -303,44 +303,56 @@
                     <MudCardContent Class="py-4">
                         <MudText Typo="Typo.h5" Class="section-title">Shipping Information</MudText>
 
+                        <!-- Default Address Checkbox -->
+                        <MudItem xs="12" Class="mb-3">
+                            <MudCheckBox @bind-Value="UseDefaultAddress"
+                                            Color="Color.Primary"
+                                            Label="Use my default address" />
+                        </MudItem>
+
                         <MudGrid Spacing="3">
                             <MudItem xs="12">
                                 <MudTextField @bind-Value="_shippingInfo.FullName"
-                                              Label="Full Name"
-                                              Variant="Variant.Outlined"
-                                              Required="true"
-                                              FullWidth="true" />
+                                                Label="Full Name"
+                                                Variant="Variant.Outlined"
+                                                Required="true"
+                                                FullWidth="true"
+                                                Disabled="_useDefaultAddress" />
                             </MudItem>
 
                             <MudItem xs="12">
                                 <MudTextField @bind-Value="_shippingInfo.AddressLine1"
-                                              Label="Address Line 1"
-                                              Variant="Variant.Outlined"
-                                              Required="true"
-                                              FullWidth="true" />
+                                                Label="Address Line 1"
+                                                Variant="Variant.Outlined"
+                                                Required="true"
+                                                FullWidth="true"
+                                                Disabled="_useDefaultAddress" />
                             </MudItem>
 
                             <MudItem xs="12">
                                 <MudTextField @bind-Value="_shippingInfo.AddressLine2"
-                                              Label="Address Line 2 (Optional)"
-                                              Variant="Variant.Outlined"
-                                              FullWidth="true" />
+                                                Label="Address Line 2 (Optional)"
+                                                Variant="Variant.Outlined"
+                                                FullWidth="true"
+                                                Disabled="_useDefaultAddress" />
                             </MudItem>
 
                             <MudItem xs="12" sm="6">
                                 <MudTextField @bind-Value="_shippingInfo.City"
-                                              Label="City / Town"
-                                              Variant="Variant.Outlined"
-                                              Required="true"
-                                              FullWidth="true" />
+                                                Label="City / Town"
+                                                Variant="Variant.Outlined"
+                                                Required="true"
+                                                FullWidth="true"
+                                                Disabled="_useDefaultAddress" />
                             </MudItem>
 
                             <MudItem xs="12" sm="6">
                                 <MudSelect T="string"
-                                           @bind-Value="_shippingInfo.County"
-                                           Variant="Variant.Outlined"
-                                           Required="true"
-                                           FullWidth="true">
+                                            @bind-Value="_shippingInfo.County"
+                                            Variant="Variant.Outlined"
+                                            Required="true"
+                                            FullWidth="true"
+                                            Disabled="_useDefaultAddress">
                                     <MudSelectItem Value="@string.Empty">Select County</MudSelectItem>
                                     @foreach (var county in _irishCounties)
                                     {
@@ -351,11 +363,12 @@
 
                             <MudItem xs="12">
                                 <MudTextField @bind-Value="_shippingInfo.Eircode"
-                                              Label="Eircode"
-                                              Variant="Variant.Outlined"
-                                              Required="true"
-                                              FullWidth="true"
-                                              HelperText="Format: A65 F4E2" />
+                                                Label="Eircode"
+                                                Variant="Variant.Outlined"
+                                                Required="true"
+                                                FullWidth="true"
+                                                HelperText="Format: A65 F4E2"
+                                                Disabled="_useDefaultAddress" />
                             </MudItem>
                         </MudGrid>
 
@@ -455,6 +468,23 @@
 </AuthorizeView>
 
 @code {
+
+    private bool _useDefaultAddress = false;
+
+    private bool UseDefaultAddress
+    {
+        get => _useDefaultAddress;
+        set
+        {
+            if (_useDefaultAddress != value)
+            {
+                _useDefaultAddress = value;
+                _ = OnUseDefaultAddressChanged(value); 
+            }
+        }
+    }
+    [Inject] private AuthenticationStateProvider? AuthStateProvider { get; set; }
+
     private decimal _totalAmount;
     private bool _isProcessing = false;
     private bool _orderCompleted = false;
@@ -485,12 +515,13 @@
         user = userService.currentUser;
         _currentUserId = user?.UserId ?? 0;
 
-        // if (!cartService.CurrentCart.Items.Any())
-        // {
-        //     Snackbar.Add("Your cart is empty. Add some items before checkout.", Severity.Warning);
-        //     Navigation.NavigateTo("/cart");
-        //     return;
-        // }
+        // Load user addresses if available
+        if (user != null && AuthStateProvider != null)
+        {
+            var state = await AuthStateProvider.GetAuthenticationStateAsync();
+            var currentUser = await userService.GetCurrentUserAsync(state.User);
+            user = currentUser; // Update user with address data
+        }
 
         _totalAmount = cartService.CurrentCart.TotalPrice + 5.00m;
     }
@@ -596,6 +627,56 @@
         }
     }
 
+    private async Task OnUseDefaultAddressChanged(bool useDefault)
+    {
+        if (useDefault)
+        {
+            await LoadDefaultAddress();
+        }
+        else
+        {
+            // Clear the form if unchecked
+            _shippingInfo = new ShippingInfo();
+        }
+        StateHasChanged();
+    }
+
+    private async Task LoadDefaultAddress()
+    {
+        try
+        {
+            if (AuthStateProvider == null) return;
+
+            var state = await AuthStateProvider.GetAuthenticationStateAsync();
+            var currentUser = await userService.GetCurrentUserAsync(state.User);
+
+            if (currentUser?.Addresses != null)
+            {
+                var defaultAddress = currentUser.Addresses.FirstOrDefault(a => a.IsDefault);
+                if (defaultAddress != null)
+                {
+                    _shippingInfo.FullName = defaultAddress.FullName;
+                    _shippingInfo.AddressLine1 = defaultAddress.AddressLine1;
+                    _shippingInfo.AddressLine2 = defaultAddress.AddressLine2 ?? "";
+                    _shippingInfo.City = defaultAddress.City;
+                    _shippingInfo.County = defaultAddress.County;
+                    _shippingInfo.Eircode = defaultAddress.Eircode;
+                }
+                else
+                {
+                    Snackbar.Add("No default address found. Please set a default address in your profile.", Severity.Warning);
+                    _useDefaultAddress = false;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading default address");
+            Snackbar.Add("Error loading default address", Severity.Error);
+            _useDefaultAddress = false;
+        }
+    }
+
     private async Task<bool> CreateOrderInDatabase()
     {
         if (OrderService == null)
@@ -660,43 +741,48 @@
 
     private bool ValidateForm()
     {
-        // Shipping Information Validation
-        if (string.IsNullOrWhiteSpace(_shippingInfo.FullName))
+        if (!_useDefaultAddress)
         {
-            _errorMessage = "Please enter your full name.";
-            return false;
-        }
 
-        if (string.IsNullOrWhiteSpace(_shippingInfo.AddressLine1))
-        {
-            _errorMessage = "Please enter your address.";
-            return false;
-        }
 
-        if (string.IsNullOrWhiteSpace(_shippingInfo.City))
-        {
-            _errorMessage = "Please enter your city/town.";
-            return false;
-        }
+            // Shipping Information Validation
+            if (string.IsNullOrWhiteSpace(_shippingInfo.FullName))
+            {
+                _errorMessage = "Please enter your full name.";
+                return false;
+            }
 
-        if (string.IsNullOrWhiteSpace(_shippingInfo.County))
-        {
-            _errorMessage = "Please select your county.";
-            return false;
-        }
+            if (string.IsNullOrWhiteSpace(_shippingInfo.AddressLine1))
+            {
+                _errorMessage = "Please enter your address.";
+                return false;
+            }
 
-        if (string.IsNullOrWhiteSpace(_shippingInfo.Eircode))
-        {
-            _errorMessage = "Please enter your Eircode.";
-            return false;
-        }
+            if (string.IsNullOrWhiteSpace(_shippingInfo.City))
+            {
+                _errorMessage = "Please enter your city/town.";
+                return false;
+            }
 
-        // Eircode validation (basic format check)
-        var eircodeRegex = new System.Text.RegularExpressions.Regex(@"^[A-Z0-9]{3}\s?[A-Z0-9]{4}$");
-        if (!eircodeRegex.IsMatch(_shippingInfo.Eircode.ToUpper().Replace(" ", "")))
-        {
-            _errorMessage = "Please enter a valid Eircode (e.g., A65 F4E2).";
-            return false;
+            if (string.IsNullOrWhiteSpace(_shippingInfo.County))
+            {
+                _errorMessage = "Please select your county.";
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(_shippingInfo.Eircode))
+            {
+                _errorMessage = "Please enter your Eircode.";
+                return false;
+            }
+
+            // Eircode validation (basic format check)
+            var eircodeRegex = new System.Text.RegularExpressions.Regex(@"^[A-Z0-9]{3}\s?[A-Z0-9]{4}$");
+            if (!eircodeRegex.IsMatch(_shippingInfo.Eircode.ToUpper().Replace(" ", "")))
+            {
+                _errorMessage = "Please enter a valid Eircode (e.g., A65 F4E2).";
+                return false;
+            }
         }
 
         // Payment Information Validation

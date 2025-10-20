@@ -335,14 +335,14 @@
                                     <div class="timeline-item @(order.Status == "Shipped" || order.Status == "Completed" ? "completed" : "") @(order.Status == "Shipped" ? "active" : "")">
                                         <MudText Typo="Typo.subtitle2" Class="mb-1">Order Shipped</MudText>
                                         <MudText Typo="Typo.caption" Color="Color.Secondary">
-                                            @(order.Status == "Shipped" || order.Status == "Completed" ? "Shipped on " + order.Created.AddDays(1).ToString("MMMM dd, yyyy") : "Pending")
+                                            @(order.Status == "Shipped" || order.Status == "Completed" ? "Shipped on " + order.LastUpdated.ToString("MMMM dd, yyyy 'at' h:mm tt") : "Pending")
                                         </MudText>
                                     </div>
 
                                     <div class="timeline-item @(order.Status == "Completed" ? "completed" : "") @(order.Status == "Completed" ? "active" : "")">
                                         <MudText Typo="Typo.subtitle2" Class="mb-1">Order Delivered</MudText>
                                         <MudText Typo="Typo.caption" Color="Color.Secondary">
-                                            @(order.Status == "Completed" ? "Delivered on " + order.Created.AddDays(3).ToString("MMMM dd, yyyy") : "Pending")
+                                            @(order.Status == "Completed" ? "Delivered on " + order.LastUpdated.ToString("MMMM dd, yyyy 'at' h:mm tt") : "Pending")
                                         </MudText>
                                     </div>
                                 </div>

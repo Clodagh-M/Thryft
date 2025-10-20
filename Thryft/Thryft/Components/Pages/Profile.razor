@@ -706,4 +706,9 @@
     {
         Navigation.NavigateTo("/login");
     }
+
+    private Address? GetDefaultAddress()
+    {
+        return user?.Addresses?.FirstOrDefault(a => a.IsDefault);
+    }
 }

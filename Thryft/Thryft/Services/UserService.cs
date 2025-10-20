@@ -215,6 +215,7 @@ public class UserService
             if (!user.Password.StartsWith("$2a$") && !user.Password.StartsWith("$2b$"))
             {
                 user.Password = HashPassword(user.Password);
+                _contextFactory.CreateDbContext().Users.Update(user);
             }
         }
 

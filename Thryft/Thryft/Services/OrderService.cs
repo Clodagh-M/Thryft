@@ -152,7 +152,7 @@ namespace Thryft.Services
                 order.Status = newStatus;
 
                 // If you have a LastUpdated field, update it too
-                // order.LastUpdated = DateTime.UtcNow;
+                order.LastUpdated = DateTime.UtcNow;
 
                 // Save changes to database
                 var result = await _context.SaveChangesAsync();

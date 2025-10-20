@@ -299,6 +299,10 @@
                                                         <MudIcon Icon="@Icons.Material.Filled.CalendarToday" Size="MudBlazor.Size.Small" Class="mr-1" />
                                                         Placed on @order.Created.ToString("MMMM dd, yyyy 'at' h:mm tt")
                                                     </MudText>
+                                                    <MudText Typo="Typo.body2" Class="order-date">
+                                                        <MudIcon Icon="@Icons.Material.Filled.EditCalendar" Size="MudBlazor.Size.Small" Class="mr-1" />
+                                                        Last Updated on @order.LastUpdated.ToString("MMMM dd, yyyy 'at' h:mm tt")
+                                                    </MudText>
                                                 </div>
                                             </MudItem>
                                             <MudItem xs="12" sm="5" Class="d-flex align-center justify-sm-end">
