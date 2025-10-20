@@ -1,5 +1,7 @@
 ﻿@page "/profile"
 
+@using Microsoft.EntityFrameworkCore
+@using Thryft.Data
 @using Thryft.Models
 @using Thryft.Services
 @using Microsoft.AspNetCore.Components.Authorization
@@ -7,6 +9,7 @@
 @inject AuthenticationStateProvider authStateProvider
 @inject NavigationManager Navigation
 @inject AddressService addressService
+@inject IDbContextFactory<AppDbContext> _contextFactory
 
 @rendermode InteractiveServer
 
@@ -147,7 +150,7 @@
                         <MudText Typo="Typo.h4" Style="font-weight: 700; color: #2d3748;">
                             Your Profile
                         </MudText>
-                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                        <MudText Typo="Typo.body2" Color="Color.Info">
                             Manage your account information and preferences
                         </MudText>
                     </div>
@@ -189,7 +192,7 @@
                                 <div class="user-details">
                                     <MudText Typo="Typo.h6" Class="mb-3" Style="font-weight: 600;">Default Address</MudText>
                                     <MudText Typo="Typo.body1" Class="mb-1"><b>@defaultAddress.FullName</b></MudText>
-                                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                    <MudText Typo="Typo.body2" Color="Color.Info">
                                         @defaultAddress.AddressLine1<br />
                                         @if (!string.IsNullOrEmpty(defaultAddress.AddressLine2))
                                         {
@@ -368,7 +371,7 @@
                                                                      OnClick="@(() => DeleteAddress(index))" />
                                                     </div>
                                                 </div>
-                                                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                                <MudText Typo="Typo.body2" Color="Color.Info">
                                                     @address.AddressLine1<br />
                                                     @if (!string.IsNullOrEmpty(address.AddressLine2))
                                                     {
@@ -383,8 +386,8 @@
                                     else
                                     {
                                         <div class="text-center py-4">
-                                            <MudIcon Icon="@Icons.Material.Filled.LocationOff" Size="MudBlazor.Size.Large" Color="Color.Secondary" Class="mb-2" />
-                                            <MudText Typo="Typo.body1" Color="Color.Secondary">
+                                            <MudIcon Icon="@Icons.Material.Filled.LocationOff" Size="MudBlazor.Size.Large" Color="Color.Info" Class="mb-2" />
+                                            <MudText Typo="Typo.body1" Color="Color.Info">
                                                 No addresses saved yet
                                             </MudText>
                                         </div>
@@ -396,9 +399,9 @@
                     else
                     {
                         <div class="text-center py-8">
-                            <MudIcon Icon="@Icons.Material.Filled.PersonOff" Size="MudBlazor.Size.Large" Color="Color.Secondary" Class="mb-3" />
+                            <MudIcon Icon="@Icons.Material.Filled.PersonOff" Size="MudBlazor.Size.Large" Color="Color.Info" Class="mb-3" />
                             <MudText Typo="Typo.h6" Class="mb-2">Please Log In</MudText>
-                            <MudText Typo="Typo.body1" Color="Color.Secondary" Class="mb-4">
+                            <MudText Typo="Typo.body1" Color="Color.Info" Class="mb-4">
                                 Please log in to view and manage your profile details.
                             </MudText>
                             <MudButton Variant="Variant.Filled"
@@ -456,7 +459,7 @@
 
                     <MudDivider Class="my-4" />
 
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                    <MudText Typo="Typo.caption" Color="Color.Info">
                         Last updated: @(user?.UpdatedAt.ToString("MMMM dd, yyyy") ?? "N/A")
                     </MudText>
                 </div>
@@ -466,6 +469,7 @@
 </div>
 
 @code {
+
     private User? user;
     private User editUser = new User();
     private ProfileView currentView = ProfileView.UserDetails;
@@ -567,44 +571,123 @@
 
     private async Task SaveAddress()
     {
-        await addressService.AddAddressAsync(newAddress);
-        
-        editingAddress = false;
-        selectedAddressIndex = -1;
-        newAddress = new Address();
-        
-        // Refresh user data (in a real app, this would come from the database)
-        var state = await authStateProvider.GetAuthenticationStateAsync();
-        user = await userService.GetCurrentUserAsync(state.User);
-        
-        StateHasChanged();
+        if (user == null) return;
+
+        try
+        {
+            // Set the user ID for the new address
+            newAddress.UserId = user.UserId;
+
+            if (selectedAddressIndex == -1)
+            {
+                // Adding new address
+                await addressService.AddAddressAsync(newAddress);
+            }
+            else
+            {
+                // Updating existing address - you'll need to implement this in AddressService
+                // For now, let's add the update functionality
+                await UpdateAddressAsync();
+            }
+
+            // Refresh user data
+            var state = await authStateProvider.GetAuthenticationStateAsync();
+            user = await userService.GetCurrentUserAsync(state.User);
+
+            editingAddress = false;
+            selectedAddressIndex = -1;
+            newAddress = new Address();
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            // Handle error - you might want to show a notification
+            Console.WriteLine($"Error saving address: {ex.Message}");
+        }
+    }
+
+    private async Task UpdateAddressAsync()
+    {
+        if (user?.Addresses == null || selectedAddressIndex < 0) return;
+
+        var addressList = user.Addresses.ToList();
+        if (selectedAddressIndex >= addressList.Count) return;
+
+        var existingAddress = addressList[selectedAddressIndex];
+
+        // Update the existing address properties
+        existingAddress.FullName = newAddress.FullName;
+        existingAddress.AddressLine1 = newAddress.AddressLine1;
+        existingAddress.AddressLine2 = newAddress.AddressLine2;
+        existingAddress.City = newAddress.City;
+        existingAddress.County = newAddress.County;
+        existingAddress.Eircode = newAddress.Eircode;
+        existingAddress.IsDefault = newAddress.IsDefault;
+
+        // You'll need to add an UpdateAddress method to AddressService
+        using var context = _contextFactory.CreateDbContext();
+        context.Addresses.Update(existingAddress);
+        await context.SaveChangesAsync();
     }
 
     private async Task DeleteAddress(int index)
     {
-        // TODO: Implement address deletion logic
-        // This would typically call a service method to delete the address
-        
-        // Refresh user data
-        var state = await authStateProvider.GetAuthenticationStateAsync();
-        user = await userService.GetCurrentUserAsync(state.User);
-        
-        StateHasChanged();
+        if (user?.Addresses == null || index < 0) return;
+
+        var addressList = user.Addresses.ToList();
+        if (index >= addressList.Count) return;
+
+        var addressToDelete = addressList[index];
+
+        try
+        {
+            // You'll need to add a DeleteAddress method to AddressService
+            using var context = _contextFactory.CreateDbContext();
+            context.Addresses.Remove(addressToDelete);
+            await context.SaveChangesAsync();
+
+            // Refresh user data
+            var state = await authStateProvider.GetAuthenticationStateAsync();
+            user = await userService.GetCurrentUserAsync(state.User);
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error deleting address: {ex.Message}");
+        }
     }
 
     private async Task SaveAccountDetails()
     {
-        // TODO: Implement account details saving logic
-        // This would typically call a service method to update user details
-        
-        // Refresh user data
-        var state = await authStateProvider.GetAuthenticationStateAsync();
-        user = await userService.GetCurrentUserAsync(state.User);
-        
-        currentPassword = string.Empty;
-        ShowUserDetails();
-        
-        StateHasChanged();
+        if (user == null) return;
+
+        try
+        {
+            // Update user properties
+            user.Name = editUser.Name;
+            user.Email = editUser.Email;
+
+            // You'll need to add an UpdateUserAsync method to UserService
+            // For now, let's implement it directly
+            using var context = _contextFactory.CreateDbContext();
+            context.Users.Update(user);
+            await context.SaveChangesAsync();
+
+            // Refresh user data
+            var state = await authStateProvider.GetAuthenticationStateAsync();
+            user = await userService.GetCurrentUserAsync(state.User);
+
+            currentPassword = string.Empty;
+            ShowUserDetails();
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error saving account details: {ex.Message}");
+        }
     }
 
     private bool CanSaveAccountDetails()

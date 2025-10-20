@@ -138,8 +138,24 @@ public class UserService
     {
         using var context = _contextFactory.CreateDbContext();
         email = email.ToLower();
-        currentUser = await context.Users.FirstOrDefaultAsync(u => u.Email == email);
+        currentUser = await context.Users
+            .Include(u => u.Addresses) // Make sure to include addresses
+            .FirstOrDefaultAsync(u => u.Email == email);
         return currentUser;
+    }
+
+    public async Task UpdateUserAsync(User user)
+    {
+        using var context = _contextFactory.CreateDbContext();
+        context.Users.Update(user);
+        await context.SaveChangesAsync();
+
+        // Update current user if it's the same user
+        if (currentUser?.UserId == user.UserId)
+        {
+            currentUser = user;
+            OnUserChanged?.Invoke();
+        }
     }
 
     private string HashPassword(string password)
@@ -168,6 +184,9 @@ public class UserService
         if (string.IsNullOrWhiteSpace(email))
             return null;
 
-        return await GetUserAsync(email);
+        using var context = _contextFactory.CreateDbContext();
+        return await context.Users
+            .Include(u => u.Addresses) // Include addresses when getting current user
+            .FirstOrDefaultAsync(u => u.Email == email);
     }
 }
