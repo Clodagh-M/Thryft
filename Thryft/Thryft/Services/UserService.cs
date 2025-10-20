@@ -137,6 +137,7 @@ public class UserService
     public async Task<User> GetUserAsync(string email)
     {
         using var context = _contextFactory.CreateDbContext();
+        email = email.ToLower();
         currentUser = await context.Users.FirstOrDefaultAsync(u => u.Email == email);
         return currentUser;
     }

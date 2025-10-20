@@ -17,6 +17,7 @@ public class AppDbContext : DbContext
     public DbSet<User> Users { get; set; }
     public DbSet<Order> Orders { get; set; }
     public DbSet<OrderItem> OrderItems { get; set; }
+    public DbSet<Address> Addresses { get; set; }
     //public DbSet<CartItem> CartItems { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -39,6 +40,24 @@ public class AppDbContext : DbContext
                   .WithMany()
                   .HasForeignKey(e => e.UserId)
                   .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Address>(entity =>
+        {
+            entity.HasKey(e => e.AddressId);
+            entity.Property(e => e.FullName).IsRequired();
+            entity.Property(e => e.AddressLine1).IsRequired();
+            entity.Property(e => e.City).IsRequired();
+            entity.Property(e => e.County).IsRequired();
+            entity.Property(e => e.Eircode).IsRequired();
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("datetime('now')");
+            entity.Property(e => e.UpdatedAt).HasDefaultValueSql("datetime('now')");
+
+            // Relationship with User
+            entity.HasOne(a => a.User)
+                  .WithMany(u => u.Addresses)
+                  .HasForeignKey(a => a.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
 
         // Configure OrderItem composite primary key

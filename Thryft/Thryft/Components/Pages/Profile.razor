@@ -1,1 +1,626 @@
-﻿
+﻿@page "/profile"
+
+@using Thryft.Models
+@using Thryft.Services
+@using Microsoft.AspNetCore.Components.Authorization
+@inject UserService userService
+@inject AuthenticationStateProvider authStateProvider
+@inject NavigationManager Navigation
+
+@rendermode InteractiveServer
+
+<PageTitle>Profile</PageTitle>
+
+<style>
+    .profile-container {
+        background: linear-gradient(135deg, #ffa396 20%, #eb8691 100%);
+        min-height: 100vh;
+        padding: 2rem 0;
+    }
+
+    .profile-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        overflow: hidden;
+    }
+
+    .profile-content {
+        display: flex;
+        min-height: 500px;
+    }
+
+    .profile-left {
+        flex: 7;
+        padding: 2rem;
+        border-right: 1px solid #e2e8f0;
+    }
+
+    .profile-right {
+        flex: 3;
+        padding: 2rem;
+        background: #f7fafc;
+    }
+
+    .profile-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .profile-icon {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #ffa396 20%, #eb8691 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+    }
+
+    .profile-icon i {
+        font-size: 2rem;
+        color: white;
+    }
+
+    .action-button {
+        margin-bottom: 1rem;
+        width: 100%;
+        padding: 1rem;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+
+    .action-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .user-details {
+        background: #f8f9fa;
+        padding: 1.5rem;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+    }
+
+    .detail-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .detail-item:last-child {
+        border-bottom: none;
+    }
+
+    .form-section {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .address-card {
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+    }
+
+    .address-card:hover {
+        border-color: #eb8691;
+        box-shadow: 0 2px 8px rgba(235, 134, 145, 0.2);
+    }
+
+    .address-card.active {
+        border-color: #eb8691;
+        background: #fff5f5;
+    }
+
+    @@media (max-width: 960px) {
+        .profile-content {
+            flex-direction: column;
+        }
+        
+        .profile-left {
+            border-right: none;
+            border-bottom: 1px solid #e2e8f0;
+        }
+    }
+</style>
+
+<div class="profile-container">
+    <MudContainer MaxWidth="MaxWidth.Large">
+        <div class="profile-card">
+            <div class="profile-content">
+                <!-- Left Side (70%) -->
+                <div class="profile-left">
+                    <div class="profile-header">
+                        <div class="profile-icon">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <MudText Typo="Typo.h4" Style="font-weight: 700; color: #2d3748;">
+                            Your Profile
+                        </MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                            Manage your account information and preferences
+                        </MudText>
+                    </div>
+
+                    @if (user is not null)
+                    {
+                        @if (currentView == ProfileView.UserDetails)
+                        {
+                            <div class="user-details">
+                                <MudText Typo="Typo.h6" Class="mb-3" Style="font-weight: 600;">Personal Information</MudText>
+                                
+                                <div class="detail-item">
+                                    <MudText Typo="Typo.body1"><b>Full Name:</b></MudText>
+                                    <MudText Typo="Typo.body1">@user.Name</MudText>
+                                </div>
+                                
+                                <div class="detail-item">
+                                    <MudText Typo="Typo.body1"><b>Email Address:</b></MudText>
+                                    <MudText Typo="Typo.body1">@user.Email</MudText>
+                                </div>
+                                
+                                <div class="detail-item">
+                                    <MudText Typo="Typo.body1"><b>Member Since:</b></MudText>
+                                    <MudText Typo="Typo.body1">@user.CreatedAt.ToString("MMMM yyyy")</MudText>
+                                </div>
+                                
+                                <div class="detail-item">
+                                    <MudText Typo="Typo.body1"><b>Account Status:</b></MudText>
+                                    <MudChip T="string" Color="Color.Success" Variant="Variant.Filled" Size="MudBlazor.Size.Small">
+                                        Active
+                                    </MudChip>
+                                </div>
+                            </div>
+
+                            <!-- Default Address Preview -->
+                            @if (user.Addresses?.Any() == true)
+                            {
+                                var defaultAddress = user.Addresses.FirstOrDefault(a => a.IsDefault) ?? user.Addresses.First();
+                                <div class="user-details">
+                                    <MudText Typo="Typo.h6" Class="mb-3" Style="font-weight: 600;">Default Address</MudText>
+                                    <MudText Typo="Typo.body1" Class="mb-1"><b>@defaultAddress.FullName</b></MudText>
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                        @defaultAddress.AddressLine1<br />
+                                        @if (!string.IsNullOrEmpty(defaultAddress.AddressLine2))
+                                        {
+                                            @defaultAddress.AddressLine2<br />
+                                        }
+                                        @defaultAddress.City, @defaultAddress.County<br />
+                                        @defaultAddress.Eircode
+                                    </MudText>
+                                </div>
+                            }
+                        }
+                        else if (currentView == ProfileView.ManageAccount)
+                        {
+                            <div class="form-section">
+                                <MudText Typo="Typo.h6" Class="mb-4" Style="font-weight: 600;">Manage Account Details</MudText>
+                                
+                                <MudGrid Spacing="3">
+                                    <MudItem xs="12" md="6">
+                                        <MudTextField @bind-Value="editUser.Name"
+                                                     Label="Full Name"
+                                                     Variant="Variant.Outlined"
+                                                     Required="true"
+                                                     RequiredError="Name is required"
+                                                     For="@(() => editUser.Name)" />
+                                    </MudItem>
+                                    <MudItem xs="12" md="6">
+                                        <MudTextField @bind-Value="editUser.Email"
+                                                     Label="Email"
+                                                     Variant="Variant.Outlined"
+                                                     Required="true"
+                                                     RequiredError="Email is required"
+                                                     For="@(() => editUser.Email)" />
+                                    </MudItem>
+                                    <MudItem xs="12">
+                                        <MudTextField @bind-Value="currentPassword"
+                                                     Label="Current Password"
+                                                     Variant="Variant.Outlined"
+                                                     InputType="InputType.Password"
+                                                     Placeholder="Enter current password to save changes" />
+                                    </MudItem>
+                                </MudGrid>
+                                
+                                <div class="d-flex justify-end gap-2 mt-4">
+                                    <MudButton Variant="Variant.Text"
+                                              Color="Color.Default"
+                                              OnClick="() => ShowUserDetails()">
+                                        Cancel
+                                    </MudButton>
+                                    <MudButton Variant="Variant.Filled"
+                                              Color="Color.Primary"
+                                              OnClick="SaveAccountDetails"
+                                              StartIcon="@Icons.Material.Filled.Save"
+                                              Disabled="@(!CanSaveAccountDetails())">
+                                        Save Changes
+                                    </MudButton>
+                                </div>
+                            </div>
+                        }
+                        else if (currentView == ProfileView.ManageAddress)
+                        {
+                            <div class="form-section">
+                                <div class="d-flex justify-content-between align-items-center mb-4">
+                                    <MudText Typo="Typo.h6" Style="font-weight: 600;">Manage Addresses</MudText>
+                                    <MudButton Variant="Variant.Outlined"
+                                              Color="Color.Primary"
+                                              OnClick="ShowAddAddress"
+                                              StartIcon="@Icons.Material.Filled.Add">
+                                        Add New Address
+                                    </MudButton>
+                                </div>
+
+                                @if (editingAddress)
+                                {
+                                    <MudGrid Spacing="3">
+                                        <MudItem xs="12">
+                                            <MudTextField @bind-Value="newAddress.FullName"
+                                                         Label="Full Name"
+                                                         Variant="Variant.Outlined"
+                                                         Required="true"
+                                                         FullWidth="true" />
+                                        </MudItem>
+
+                                        <MudItem xs="12">
+                                            <MudTextField @bind-Value="newAddress.AddressLine1"
+                                                         Label="Address Line 1"
+                                                         Variant="Variant.Outlined"
+                                                         Required="true"
+                                                         FullWidth="true" />
+                                        </MudItem>
+
+                                        <MudItem xs="12">
+                                            <MudTextField @bind-Value="newAddress.AddressLine2"
+                                                         Label="Address Line 2 (Optional)"
+                                                         Variant="Variant.Outlined"
+                                                         FullWidth="true" />
+                                        </MudItem>
+
+                                        <MudItem xs="12" sm="6">
+                                            <MudTextField @bind-Value="newAddress.City"
+                                                         Label="City / Town"
+                                                         Variant="Variant.Outlined"
+                                                         Required="true"
+                                                         FullWidth="true" />
+                                        </MudItem>
+
+                                        <MudItem xs="12" sm="6">
+                                            <MudSelect T="string"
+                                                       @bind-Value="newAddress.County"
+                                                       Variant="Variant.Outlined"
+                                                       Label="County"
+                                                       Required="true"
+                                                       FullWidth="true">
+                                                <MudSelectItem T="string" Value="@string.Empty">Select County</MudSelectItem>
+                                                @foreach (var county in irishCounties)
+                                                {
+                                                    <MudSelectItem Value="@county">@county</MudSelectItem>
+                                                }
+                                            </MudSelect>
+                                        </MudItem>
+
+                                        <MudItem xs="12">
+                                            <MudTextField @bind-Value="newAddress.Eircode"
+                                                         Label="Eircode"
+                                                         Variant="Variant.Outlined"
+                                                         Required="true"
+                                                         FullWidth="true"
+                                                         HelperText="Format: A65 F4E2" />
+                                        </MudItem>
+
+                                        <MudItem xs="12">
+                                            <MudCheckBox @bind-Value="newAddress.IsDefault"
+                                                        Color="Color.Primary"
+                                                        Label="Set as default shipping address" />
+                                        </MudItem>
+                                    </MudGrid>
+                                    
+                                    <div class="d-flex justify-end gap-2 mt-4">
+                                        <MudButton Variant="Variant.Text"
+                                                  Color="Color.Default"
+                                                  OnClick="CancelEditAddress">
+                                            Cancel
+                                        </MudButton>
+                                        <MudButton Variant="Variant.Filled"
+                                                  Color="Color.Primary"
+                                                  OnClick="SaveAddress"
+                                                  StartIcon="@Icons.Material.Filled.Save">
+                                            @(selectedAddressIndex == -1 ? "Add Address" : "Update Address")
+                                        </MudButton>
+                                    </div>
+                                }
+                                else
+                                {
+                                    @if (user.Addresses?.Any() == true)
+                                    {
+                                        @foreach (var address in user.Addresses)
+                                        {
+                                            var index = user.Addresses.ToList().IndexOf(address);
+                                            <div class="address-card @(address.IsDefault ? "active" : "")">
+                                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                                    <MudText Typo="Typo.body1" Style="font-weight: 600;">
+                                                        @address.FullName
+                                                        @if (address.IsDefault)
+                                                        {
+                                                            <MudChip T="string" Color="Color.Primary" Size="MudBlazor.Size.Small" Class="ml-2">
+                                                                Default
+                                                            </MudChip>
+                                                        }
+                                                    </MudText>
+                                                    <div class="d-flex gap-1">
+                                                        <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                                                     Size="MudBlazor.Size.Small"
+                                                                     OnClick="@(() => EditAddress(index))" />
+                                                        <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                                                     Size="MudBlazor.Size.Small"
+                                                                     Color="Color.Error"
+                                                                     OnClick="@(() => DeleteAddress(index))" />
+                                                    </div>
+                                                </div>
+                                                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                                    @address.AddressLine1<br />
+                                                    @if (!string.IsNullOrEmpty(address.AddressLine2))
+                                                    {
+                                                        @address.AddressLine2<br />
+                                                    }
+                                                    @address.City, @address.County<br />
+                                                    @address.Eircode
+                                                </MudText>
+                                            </div>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <div class="text-center py-4">
+                                            <MudIcon Icon="@Icons.Material.Filled.LocationOff" Size="MudBlazor.Size.Large" Color="Color.Secondary" Class="mb-2" />
+                                            <MudText Typo="Typo.body1" Color="Color.Secondary">
+                                                No addresses saved yet
+                                            </MudText>
+                                        </div>
+                                    }
+                                }
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="text-center py-8">
+                            <MudIcon Icon="@Icons.Material.Filled.PersonOff" Size="MudBlazor.Size.Large" Color="Color.Secondary" Class="mb-3" />
+                            <MudText Typo="Typo.h6" Class="mb-2">Please Log In</MudText>
+                            <MudText Typo="Typo.body1" Color="Color.Secondary" Class="mb-4">
+                                Please log in to view and manage your profile details.
+                            </MudText>
+                            <MudButton Variant="Variant.Filled"
+                                      Color="Color.Primary"
+                                      OnClick="RedirectToLogin"
+                                      StartIcon="@Icons.Material.Filled.Login">
+                                Log In
+                            </MudButton>
+                        </div>
+                    }
+                </div>
+
+                <!-- Right Side (30%) -->
+                <div class="profile-right">
+                    <MudText Typo="Typo.h6" Class="mb-4" Style="font-weight: 600;">Profile Actions</MudText>
+                    
+                    <MudButton Variant="Variant.Filled"
+                              Color="Color.Primary"
+                              OnClick="ShowUserDetails"
+                              StartIcon="@Icons.Material.Filled.Person"
+                              Class="action-button"
+                              FullWidth="true"
+                              Disabled="@(currentView == ProfileView.UserDetails)">
+                        View Profile
+                    </MudButton>
+                    
+                    <MudButton Variant="Variant.Outlined"
+                              Color="Color.Primary"
+                              OnClick="ShowManageAccount"
+                              StartIcon="@Icons.Material.Filled.Edit"
+                              Class="action-button"
+                              FullWidth="true"
+                              Disabled="@(currentView == ProfileView.ManageAccount)">
+                        Manage Account
+                    </MudButton>
+                    
+                    <MudButton Variant="Variant.Outlined"
+                              Color="Color.Primary"
+                              OnClick="ShowManageAddress"
+                              StartIcon="@Icons.Material.Filled.Home"
+                              Class="action-button"
+                              FullWidth="true"
+                              Disabled="@(currentView == ProfileView.ManageAddress)">
+                        Manage Addresses
+                    </MudButton>
+                    
+                    <MudButton Variant="Variant.Outlined"
+                              Color="Color.Info"
+                              OnClick="NavigateToOrders"
+                              StartIcon="@Icons.Material.Filled.ShoppingBag"
+                              Class="action-button"
+                              FullWidth="true">
+                        View Orders
+                    </MudButton>
+
+                    <MudDivider Class="my-4" />
+
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                        Last updated: @(user?.UpdatedAt.ToString("MMMM dd, yyyy") ?? "N/A")
+                    </MudText>
+                </div>
+            </div>
+        </div>
+    </MudContainer>
+</div>
+
+@code {
+    private User? user;
+    private User editUser = new User();
+    private ProfileView currentView = ProfileView.UserDetails;
+    private bool editingAddress = false;
+    private int selectedAddressIndex = -1;
+    private Address newAddress = new Address();
+    private string currentPassword = string.Empty;
+
+    private readonly string[] irishCounties = new[]
+    {
+        "Antrim", "Armagh", "Carlow", "Cavan", "Clare", "Cork", "Derry", "Donegal",
+        "Down", "Dublin", "Fermanagh", "Galway", "Kerry", "Kildare", "Kilkenny",
+        "Laois", "Leitrim", "Limerick", "Longford", "Louth", "Mayo", "Meath",
+        "Monaghan", "Offaly", "Roscommon", "Sligo", "Tipperary", "Tyrone",
+        "Waterford", "Westmeath", "Wexford", "Wicklow"
+    };
+
+    private enum ProfileView
+    {
+        UserDetails,
+        ManageAccount,
+        ManageAddress
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await authStateProvider.GetAuthenticationStateAsync();
+        user = await userService.GetCurrentUserAsync(state.User);
+        
+        if (user != null)
+        {
+            editUser = new User
+            {
+                Name = user.Name,
+                Email = user.Email
+            };
+        }
+    }
+
+    private void ShowUserDetails()
+    {
+        currentView = ProfileView.UserDetails;
+        editingAddress = false;
+        selectedAddressIndex = -1;
+    }
+
+    private void ShowManageAccount()
+    {
+        currentView = ProfileView.ManageAccount;
+        editingAddress = false;
+        selectedAddressIndex = -1;
+    }
+
+    private void ShowManageAddress()
+    {
+        currentView = ProfileView.ManageAddress;
+        editingAddress = false;
+        selectedAddressIndex = -1;
+    }
+
+    private void ShowAddAddress()
+    {
+        editingAddress = true;
+        newAddress = new Address();
+        selectedAddressIndex = -1;
+    }
+
+    private void EditAddress(int index)
+    {
+        editingAddress = true;
+        selectedAddressIndex = index;
+        if (user?.Addresses != null)
+        {
+            var addressList = user.Addresses.ToList();
+            if (index >= 0 && index < addressList.Count)
+            {
+                var address = addressList[index];
+                newAddress = new Address
+                {
+                    FullName = address.FullName,
+                    AddressLine1 = address.AddressLine1,
+                    AddressLine2 = address.AddressLine2,
+                    City = address.City,
+                    County = address.County,
+                    Eircode = address.Eircode,
+                    IsDefault = address.IsDefault
+                };
+            }
+        }
+    }
+
+    private void CancelEditAddress()
+    {
+        editingAddress = false;
+        selectedAddressIndex = -1;
+        newAddress = new Address();
+    }
+
+    private async Task SaveAddress()
+    {
+        // TODO: Implement address saving logic
+        // This would typically call a service method to save/update the address
+        // For now, we'll just update the UI state
+        
+        editingAddress = false;
+        selectedAddressIndex = -1;
+        newAddress = new Address();
+        
+        // Refresh user data (in a real app, this would come from the database)
+        var state = await authStateProvider.GetAuthenticationStateAsync();
+        user = await userService.GetCurrentUserAsync(state.User);
+        
+        StateHasChanged();
+    }
+
+    private async Task DeleteAddress(int index)
+    {
+        // TODO: Implement address deletion logic
+        // This would typically call a service method to delete the address
+        
+        // Refresh user data
+        var state = await authStateProvider.GetAuthenticationStateAsync();
+        user = await userService.GetCurrentUserAsync(state.User);
+        
+        StateHasChanged();
+    }
+
+    private async Task SaveAccountDetails()
+    {
+        // TODO: Implement account details saving logic
+        // This would typically call a service method to update user details
+        
+        // Refresh user data
+        var state = await authStateProvider.GetAuthenticationStateAsync();
+        user = await userService.GetCurrentUserAsync(state.User);
+        
+        currentPassword = string.Empty;
+        ShowUserDetails();
+        
+        StateHasChanged();
+    }
+
+    private bool CanSaveAccountDetails()
+    {
+        return !string.IsNullOrWhiteSpace(editUser.Name) && 
+               !string.IsNullOrWhiteSpace(editUser.Email) &&
+               !string.IsNullOrWhiteSpace(currentPassword);
+    }
+
+    private void NavigateToOrders()
+    {
+        Navigation.NavigateTo("/orders");
+    }
+
+    private void RedirectToLogin()
+    {
+        Navigation.NavigateTo("/login");
+    }
+}
