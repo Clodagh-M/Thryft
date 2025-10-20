@@ -141,7 +141,7 @@ public class UserService
         email = email.ToLower();
         currentUser = await context.Users
             .Include(u => u.Addresses) // Make sure to include addresses
-            .FirstOrDefaultAsync(u => u.Email == email);
+            .FirstOrDefaultAsync(u => u.Email == email && u.IsActive);
         return currentUser;
     }
 
@@ -159,14 +159,14 @@ public class UserService
         }
     }
 
-    private string HashPassword(string password)
-    {
-        using var context = _contextFactory.CreateDbContext();
-        email = email.ToLower();
-        currentUser = await context.Users.FirstOrDefaultAsync(u => u.Email == email && u.IsActive);
-        return true;
+    //private string HashPassword(string password)
+    //{
+    //    using var context = _contextFactory.CreateDbContext();
+    //    email = email.ToLower();
+    //    currentUser = await context.Users.FirstOrDefaultAsync(u => u.Email == email && u.IsActive);
+    //    return true;
 
-    }
+    //}
 
     public async Task AddUserAsync(User user)
     {
@@ -219,5 +219,13 @@ public class UserService
         }
 
         await context.SaveChangesAsync();
+    }
+
+    public async Task<bool> IsActiveUserAsync(string email)
+    {
+        using var context = _contextFactory.CreateDbContext();
+        email = email.ToLower();
+        var user = await context.Users.FirstOrDefaultAsync(u => u.Email == email);
+        return user?.IsActive ?? false;
     }
 }
