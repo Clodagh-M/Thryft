@@ -6,6 +6,7 @@
 @inject UserService userService
 @inject AuthenticationStateProvider authStateProvider
 @inject NavigationManager Navigation
+@inject AddressService addressService
 
 @rendermode InteractiveServer
 
@@ -544,6 +545,7 @@
                 var address = addressList[index];
                 newAddress = new Address
                 {
+                    UserId = user.UserId,
                     FullName = address.FullName,
                     AddressLine1 = address.AddressLine1,
                     AddressLine2 = address.AddressLine2,
@@ -565,9 +567,7 @@
 
     private async Task SaveAddress()
     {
-        // TODO: Implement address saving logic
-        // This would typically call a service method to save/update the address
-        // For now, we'll just update the UI state
+        await addressService.AddAddressAsync(newAddress);
         
         editingAddress = false;
         selectedAddressIndex = -1;
