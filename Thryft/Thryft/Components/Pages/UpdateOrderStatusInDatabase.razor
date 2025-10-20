@@ -138,7 +138,7 @@
                     <div class="filter-section">
                         <MudGrid>
                             <MudItem xs="12" sm="6" md="3">
-                                <MudSelect T="string" Label="Status Filter" @bind-Value="_statusFilter" Variant="Variant.Outlined">
+                                <MudSelect T="string" @bind-Value="_statusFilter" Variant="Variant.Outlined">
                                     <MudSelectItem Value="@STATUS_ALL">All Statuses</MudSelectItem>
                                     <MudSelectItem Value="@STATUS_PROCESSING">Processing</MudSelectItem>
                                     <MudSelectItem Value="@STATUS_SHIPPED">Shipped</MudSelectItem>
@@ -148,13 +148,13 @@
                             </MudItem>
                             <MudItem xs="12" sm="6" md="3">
                                 <MudTextField @bind-Value="_searchTerm" 
-                                             Label="Search Order ID" 
+                                             Placeholder="Search Order ID..." 
                                              Variant="Variant.Outlined"
                                              Adornment="Adornment.Start"
                                              AdornmentIcon="@Icons.Material.Filled.Search" />
                             </MudItem>
                             <MudItem xs="12" sm="6" md="3">
-                                <MudSelect T="string" Label="Sort By" @bind-Value="_sortBy" Variant="Variant.Outlined">
+                                <MudSelect T="string" @bind-Value="_sortBy" Variant="Variant.Outlined">
                                     <MudSelectItem Value="@SORT_NEWEST">Newest First</MudSelectItem>
                                     <MudSelectItem Value="@SORT_OLDEST">Oldest First</MudSelectItem>
                                     <MudSelectItem Value="@SORT_TOTAL">Total Amount</MudSelectItem>

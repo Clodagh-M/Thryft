@@ -310,6 +310,7 @@
                                         <MudSelectItem Value="@STATUS_PROCESSING">Processing</MudSelectItem>
                                         <MudSelectItem Value="@STATUS_SHIPPED">Shipped</MudSelectItem>
                                         <MudSelectItem Value="@STATUS_COMPLETED">Completed</MudSelectItem>
+                                        <MudSelectItem Value="@STATUS_COMPLETED">Completed</MudSelectItem>
                                         <MudSelectItem Value="@STATUS_CANCELLED">Cancelled</MudSelectItem>
                                     </MudSelect>
                                 </MudItem>
@@ -757,7 +758,8 @@
 
             if (success)
             {
-                inventoryService.RestoreInventoryOrder(order);
+                await inventoryService.RestoreInventoryOrder(order);
+                order.LastUpdated = DateTime.Now;
                 Snackbar.Add($"Order #{order.OrderId} has been cancelled successfully.", Severity.Success);
                 await LoadOrders();
                 StateHasChanged();
