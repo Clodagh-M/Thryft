@@ -3,6 +3,7 @@
 @inject CartService cartService
 @inject NavigationManager Navigation
 @inject AuthService AuthService
+@inject UserService userService
 
 <MudThemeProvider Theme="ThryftTheme" />
 <MudDialogProvider />
@@ -60,45 +61,55 @@
     <!-- Background -->
     <div class="background-overlay"></div>
 
-    <!-- Content -->
-    <div class="content-wrapper">
-        <main>
-            <NavMenu />
-            <div class="top-row px-4"></div>
-            <article class="content px-4 mt-4">
-                @Body
-            </article>
-            <!-- Website Footer -->
-            <div class="website-footer">
-                <div class="footer-content">
-                    <MudGrid Spacing="4">
-                        <MudItem xs="12" md="4">
-                            <MudText Typo="Typo.h6" Class="mb-3" Style="font-weight: 600;">Thryft</MudText>
-                            <MudText Typo="Typo.body2" Class="mb-2">Premium online shopping experience</MudText>
-                            <MudText Typo="Typo.body2">Your trusted partner for quality products</MudText>
-                        </MudItem>
-                        <MudItem xs="12" md="4">
-                            @* <MudText Typo="Typo.h6" Class="mb-3" Style="font-weight: 600;">Quick Links</MudText>
-                            <MudLink Color="Color.Tertiary" Typo="Typo.body2" OnClick="GoToHome" Class="mb-1">Products</MudLink>
-                            <br />
-                            <MudLink Color="Color.Tertiary" Typo="Typo.body2" OnClick="GoToCart" Class="mb-1">Cart</MudLink>
-                            <br />
-                            <MudLink Color="Color.Tertiary" Typo="Typo.body2" OnClick="GoToOrders" Class="mb-1">Orders</MudLink> *@
-                        </MudItem>
-                        <MudItem xs="12" md="4">
-                            <MudText Typo="Typo.h6" Class="mb-3" Style="font-weight: 600;">Contact</MudText>
-                            <MudText Typo="Typo.body2" Class="mb-1">support@thryft.com</MudText>
-                            <MudText Typo="Typo.body2" Class="mb-1">012 345 6789</MudText>
-                        </MudItem>
-                    </MudGrid>
-                    <MudDivider Class="my-4" Color="Color.Dark" />
-                    <MudText Typo="Typo.caption" Class="text-center">
-                        © 2025 Thryft. All rights reserved.
-                    </MudText>
+    @* @if (isInitializing)
+    {
+        <MudContainer Class="d-flex justify-center align-center" Style="height: 100vh;">
+            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+        </MudContainer>
+    }
+    else
+    { *@
+
+        <!-- Content -->
+        <div class="content-wrapper">
+            <main>
+                <NavMenu />
+                <div class="top-row px-4"></div>
+                <article class="content px-4 mt-4">
+                    @Body
+                </article>
+                <!-- Website Footer -->
+                <div class="website-footer">
+                    <div class="footer-content">
+                        <MudGrid Spacing="4">
+                            <MudItem xs="12" md="4">
+                                <MudText Typo="Typo.h6" Class="mb-3" Style="font-weight: 600;">Thryft</MudText>
+                                <MudText Typo="Typo.body2" Class="mb-2">Premium online shopping experience</MudText>
+                                <MudText Typo="Typo.body2">Your trusted partner for quality products</MudText>
+                            </MudItem>
+                            <MudItem xs="12" md="4">
+                                @* <MudText Typo="Typo.h6" Class="mb-3" Style="font-weight: 600;">Quick Links</MudText>
+                                <MudLink Color="Color.Tertiary" Typo="Typo.body2" OnClick="GoToHome" Class="mb-1">Products</MudLink>
+                                <br />
+                                <MudLink Color="Color.Tertiary" Typo="Typo.body2" OnClick="GoToCart" Class="mb-1">Cart</MudLink>
+                                <br />
+                                <MudLink Color="Color.Tertiary" Typo="Typo.body2" OnClick="GoToOrders" Class="mb-1">Orders</MudLink> *@
+                            </MudItem>
+                            <MudItem xs="12" md="4">
+                                <MudText Typo="Typo.h6" Class="mb-3" Style="font-weight: 600;">Contact</MudText>
+                                <MudText Typo="Typo.body2" Class="mb-1">support@thryft.com</MudText>
+                                <MudText Typo="Typo.body2" Class="mb-1">012 345 6789</MudText>
+                            </MudItem>
+                        </MudGrid>
+                        <MudDivider Class="my-4" Color="Color.Dark" />
+                        <MudText Typo="Typo.caption" Class="text-center">
+                            © 2025 Thryft. All rights reserved.
+                        </MudText>
+                    </div>
                 </div>
-            </div>
-        </main>
-    </div>
+            </main>
+        </div>
+        @* } *@
 </div>
 
 <div id="blazor-error-ui">
@@ -108,6 +119,9 @@
 </div>
 
 @code {
+
+    private bool isInitializing = true;
+
     MudTheme ThryftTheme = new MudTheme()
     {
         PaletteLight = new PaletteLight()
@@ -125,7 +139,8 @@
     {
         if (firstRender)
         {
-            await AuthService.InitializeAsync();
+            await userService.InitializeAsync();
+            isInitializing = false;
             StateHasChanged();
         }
     }
