@@ -141,6 +141,14 @@ public class UserService
         currentUser = await context.Users.FirstOrDefaultAsync(u => u.Email == email);
         return currentUser;
     }
+    public async Task<bool> IsActiveUserAsync( string email)
+    {
+        using var context = _contextFactory.CreateDbContext();
+        email = email.ToLower();
+        currentUser = await context.Users.FirstOrDefaultAsync(u => u.Email == email && u.IsActive);
+        return true;
+
+    }
 
     private string HashPassword(string password)
     {
