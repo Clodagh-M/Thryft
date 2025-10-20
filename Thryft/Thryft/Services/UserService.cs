@@ -5,6 +5,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Thryft.Data;
 using Thryft.Models;
+using BCrypt.Net;
 
 namespace Thryft.Services;
 
@@ -90,7 +91,7 @@ public class UserService
         if (user == null)
             return null;
 
-        if (user.Password == password)
+        if (VerifyPassword(password, user.Password))
         {
             currentUser = user;
             try
@@ -160,15 +161,18 @@ public class UserService
 
     private string HashPassword(string password)
     {
-        using var sha256 = System.Security.Cryptography.SHA256.Create();
-        byte[] bytes = Encoding.UTF8.GetBytes(password);
-        byte[] hash = sha256.ComputeHash(bytes);
-        return Convert.ToBase64String(hash);
+        using var context = _contextFactory.CreateDbContext();
+        email = email.ToLower();
+        currentUser = await context.Users.FirstOrDefaultAsync(u => u.Email == email && u.IsActive);
+        return true;
+
     }
 
     public async Task AddUserAsync(User user)
     {
         using var context = _contextFactory.CreateDbContext();
+        user.Password = HashPassword(user.Password);
+
         context.Users.Add(user);
         await context.SaveChangesAsync();
     }
@@ -188,5 +192,32 @@ public class UserService
         return await context.Users
             .Include(u => u.Addresses) // Include addresses when getting current user
             .FirstOrDefaultAsync(u => u.Email == email);
+    }
+    private string HashPassword(string password)
+    {
+        return BCrypt.Net.BCrypt.HashPassword(password);
+    }
+
+    private bool VerifyPassword(string password, string hashedPassword)
+    {
+        return BCrypt.Net.BCrypt.Verify(password, hashedPassword);
+    }
+
+    // Run this once to migrate existing users
+    public async Task MigrateExistingPasswords()
+    {
+        using var context = _contextFactory.CreateDbContext();
+        var users = await context.Users.ToListAsync();
+
+        foreach (var user in users)
+        {
+            // If password doesn't look like a BCrypt hash, hash it
+            if (!user.Password.StartsWith("$2a$") && !user.Password.StartsWith("$2b$"))
+            {
+                user.Password = HashPassword(user.Password);
+            }
+        }
+
+        await context.SaveChangesAsync();
     }
 }
