@@ -156,6 +156,25 @@
             color: #666;
         }
 
+    .deactivate-warning {
+        background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%);
+        border: 1px solid #feb2b2;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .deactivate-item {
+        display: flex;
+        align-items: center;
+        padding: 0.5rem 0;
+    }
+
+    .deactivate-icon {
+        margin-right: 0.75rem;
+        flex-shrink: 0;
+    }
+
     @@media (max-width: 960px) {
         .profile-content {
             flex-direction: column;
@@ -210,9 +229,18 @@
 
                                 <div class="detail-item">
                                     <MudText Typo="Typo.body1"><b>Account Status:</b></MudText>
-                                    <MudChip T="string" Color="Color.Success" Variant="Variant.Filled" Size="MudBlazor.Size.Small">
-                                        Active
-                                    </MudChip>
+                                    @if (user.IsActive)
+                                    {
+                                        <MudChip T="string" Color="Color.Success" Variant="Variant.Filled" Size="MudBlazor.Size.Small">
+                                            Active
+                                        </MudChip>
+                                    }
+                                    else
+                                    {
+                                        <MudChip T="string" Color="Color.Warning" Variant="Variant.Filled" Size="MudBlazor.Size.Small">
+                                            Inactive
+                                        </MudChip>
+                                    }
                                 </div>
                             </div>
 
@@ -228,7 +256,6 @@
                                         @if (!string.IsNullOrEmpty(defaultAddress.AddressLine2))
                                         {
                                             @defaultAddress.AddressLine2
-                            
                                             <br />
                                         }
                                         @defaultAddress.City, @defaultAddress.County<br />
@@ -488,7 +515,6 @@
                                                     @if (!string.IsNullOrEmpty(address.AddressLine2))
                                                     {
                                                         @address.AddressLine2
-                                
                                                         <br />
                                                     }
                                                     @address.City, @address.County<br />
@@ -506,6 +532,113 @@
                                             </MudText>
                                         </div>
                                     }
+                                }
+                            </div>
+                        }
+                        else if (currentView == ProfileView.DeactivateAccount)
+                        {
+                            <div class="form-section">
+                                <div class="text-center mb-4">
+                                    <MudIcon Icon="@Icons.Material.Filled.Warning" Size="MudBlazor.Size.Large" Color="Color.Error" Class="mb-3" />
+                                    <MudText Typo="Typo.h5" Color="Color.Error" Style="font-weight: 600;">Deactivate Account</MudText>
+                                    <MudText Typo="Typo.body1" Color="Color.Info" Class="mt-2">
+                                        This action will temporarily disable your account. You can reactivate it by logging in again.
+                                    </MudText>
+                                </div>
+
+                                <div class="user-details">
+                                    <MudText Typo="Typo.h6" Class="mb-3" Style="font-weight: 600;">What happens when you deactivate:</MudText>
+
+                                    <div class="deactivate-item">
+                                        <MudIcon Icon="@Icons.Material.Filled.Block" Size="MudBlazor.Size.Small" Color="Color.Info" Class="deactivate-icon" />
+                                        <MudText Typo="Typo.body2">You will be logged out immediately</MudText>
+                                    </div>
+
+                                    <div class="deactivate-item">
+                                        <MudIcon Icon="@Icons.Material.Filled.ShoppingCart" Size="MudBlazor.Size.Small" Color="Color.Info" Class="deactivate-icon" />
+                                        <MudText Typo="Typo.body2">You won't be able to place new orders</MudText>
+                                    </div>
+
+                                    <div class="deactivate-item">
+                                        <MudIcon Icon="@Icons.Material.Filled.VisibilityOff" Size="MudBlazor.Size.Small" Color="Color.Info" Class="deactivate-icon" />
+                                        <MudText Typo="Typo.body2">Your profile will be hidden</MudText>
+                                    </div>
+
+                                    <div class="deactivate-item">
+                                        <MudIcon Icon="@Icons.Material.Filled.Settings" Size="MudBlazor.Size.Small" Color="Color.Success" Class="deactivate-icon" />
+                                        <MudText Typo="Typo.body2">Your data will be preserved</MudText>
+                                    </div>
+
+                                    <div class="deactivate-item">
+                                        <MudIcon Icon="@Icons.Material.Filled.Restore" Size="MudBlazor.Size.Small" Color="Color.Success" Class="deactivate-icon" />
+                                        <MudText Typo="Typo.body2">You can reactivate anytime by logging in</MudText>
+                                    </div>
+                                </div>
+
+                                @if (!showDeactivateConfirmation)
+                                {
+                                    <MudGrid Spacing="3" Class="mt-4">
+                                        <MudItem xs="12">
+                                            <MudTextField @bind-Value="deactivatePassword"
+                                                          Label="Confirm Your Password"
+                                                          Variant="Variant.Outlined"
+                                                          InputType="InputType.Password"
+                                                          Required="true"
+                                                          FullWidth="true"
+                                                          Placeholder="Enter your password to confirm" />
+                                        </MudItem>
+                                        <MudItem xs="12">
+                                            <MudCheckBox @bind-Value="deactivateConfirmed"
+                                                         Color="Color.Error"
+                                                         Label="I understand that my account will be deactivated" />
+                                        </MudItem>
+                                    </MudGrid>
+
+                                    @if (!string.IsNullOrEmpty(deactivateError))
+                                    {
+                                        <MudAlert Severity="Severity.Error" Class="mt-3">
+                                            @deactivateError
+                                        </MudAlert>
+                                    }
+
+                                    <div class="d-flex justify-end gap-2 mt-4">
+                                        <MudButton Variant="Variant.Text"
+                                                   Color="Color.Default"
+                                                   OnClick="() => ShowUserDetails()">
+                                            Cancel
+                                        </MudButton>
+                                        <MudButton Variant="Variant.Filled"
+                                                   Color="Color.Error"
+                                                   OnClick="ConfirmDeactivate"
+                                                   StartIcon="@Icons.Material.Filled.Warning"
+                                                   Disabled="!CanDeactivateAccount()">
+                                            Deactivate Account
+                                        </MudButton>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="text-center py-4">
+                                        <MudIcon Icon="@Icons.Material.Filled.Info" Size="MudBlazor.Size.Large" Color="Color.Warning" Class="mb-3" />
+                                        <MudText Typo="Typo.h6" Class="mb-3">Are you absolutely sure?</MudText>
+                                        <MudText Typo="Typo.body2" Color="Color.Info" Class="mb-4">
+                                            This action cannot be undone. You will be logged out immediately.
+                                        </MudText>
+
+                                        <div class="d-flex justify-center gap-2 mt-4">
+                                            <MudButton Variant="Variant.Text"
+                                                       Color="Color.Default"
+                                                       OnClick="() => showDeactivateConfirmation = false">
+                                                Go Back
+                                            </MudButton>
+                                            <MudButton Variant="Variant.Filled"
+                                                       Color="Color.Error"
+                                                       OnClick="DeactivateAccount"
+                                                       StartIcon="@Icons.Material.Filled.DeleteForever">
+                                                Yes, Deactivate My Account
+                                            </MudButton>
+                                        </div>
+                                    </div>
                                 }
                             </div>
                         }
@@ -571,6 +704,17 @@
                         View Orders
                     </MudButton>
 
+                    <!-- Deactivate Account Button -->
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Error"
+                               OnClick="ShowDeactivateAccount"
+                               StartIcon="@Icons.Material.Filled.DeleteOutline"
+                               Class="action-button"
+                               FullWidth="true"
+                               Disabled="@(currentView == ProfileView.DeactivateAccount)">
+                        Deactivate Account
+                    </MudButton>
+
                     <MudDivider Class="my-4" />
 
                     <MudText Typo="Typo.caption" Color="Color.Info">
@@ -583,7 +727,6 @@
 </div>
 
 @code {
-
     private User? user;
     private User editUser = new User();
     private ProfileView currentView = ProfileView.UserDetails;
@@ -593,6 +736,12 @@
     private string currentPassword = string.Empty;
     private string passwordError = string.Empty;
     private string passwordSuccess = string.Empty;
+
+    // Deactivate account properties
+    private bool showDeactivateConfirmation = false;
+    private string deactivatePassword = string.Empty;
+    private bool deactivateConfirmed = false;
+    private string deactivateError = string.Empty;
 
     // Password change properties
     private PasswordChangeModel passwordChange = new PasswordChangeModel();
@@ -611,7 +760,8 @@
     {
         UserDetails,
         ManageAccount,
-        ManageAddress
+        ManageAddress,
+        DeactivateAccount
     }
 
     private enum AccountTab
@@ -649,6 +799,7 @@
         selectedAddressIndex = -1;
         accountTab = AccountTab.ProfileDetails;
         ClearPasswordMessages();
+        ResetDeactivateForm();
     }
 
     private void ShowManageAccount()
@@ -658,6 +809,7 @@
         selectedAddressIndex = -1;
         accountTab = AccountTab.ProfileDetails;
         ClearPasswordMessages();
+        ResetDeactivateForm();
     }
 
     private void SwitchAccountTab(AccountTab tab)
@@ -677,6 +829,24 @@
         currentView = ProfileView.ManageAddress;
         editingAddress = false;
         selectedAddressIndex = -1;
+        ResetDeactivateForm();
+    }
+
+    private void ShowDeactivateAccount()
+    {
+        currentView = ProfileView.DeactivateAccount;
+        editingAddress = false;
+        selectedAddressIndex = -1;
+        accountTab = AccountTab.ProfileDetails;
+        ClearPasswordMessages();
+    }
+
+    private void ResetDeactivateForm()
+    {
+        showDeactivateConfirmation = false;
+        deactivatePassword = string.Empty;
+        deactivateConfirmed = false;
+        deactivateError = string.Empty;
     }
 
     private void ShowAddAddress()
@@ -891,7 +1061,6 @@
 
     private async Task<bool> VerifyCurrentPassword(string password)
     {
-
         using var context = _contextFactory.CreateDbContext();
         var dbUser = await context.Users.FindAsync(user.UserId);
 
@@ -900,23 +1069,71 @@
         if (userService.VerifyPassword(password, dbUser.Password)) return true;
 
         return false;
-
     }
 
     private async Task UpdatePassword(string newPassword)
     {
-        // You'll need to implement this method to update the password
-        // This depends on how you handle password hashing in your application
-
         using var context = _contextFactory.CreateDbContext();
         var dbUser = await context.Users.FindAsync(user.UserId);
 
         if (dbUser != null)
         {
-            dbUser.Password = userService.HashPassword(dbUser.Password);
-
+            dbUser.Password = userService.HashPassword(newPassword);
             dbUser.UpdatedAt = DateTime.UtcNow;
             await context.SaveChangesAsync();
+        }
+    }
+
+    private async Task ConfirmDeactivate()
+    {
+        if (user == null) return;
+
+        deactivateError = string.Empty;
+
+        // Validate password
+        if (string.IsNullOrWhiteSpace(deactivatePassword))
+        {
+            deactivateError = "Please enter your password to confirm";
+            return;
+        }
+
+        if (!deactivateConfirmed)
+        {
+            deactivateError = "Please confirm that you understand the consequences";
+            return;
+        }
+
+        // Verify password
+        if (!await VerifyCurrentPassword(deactivatePassword))
+        {
+            deactivateError = "Incorrect password. Please try again.";
+            return;
+        }
+
+        showDeactivateConfirmation = true;
+        StateHasChanged();
+    }
+
+    private async Task DeactivateAccount()
+    {
+        if (user == null) return;
+
+        try
+        {
+            // Call the UserService to deactivate the account
+            await userService.deactivateAccount(user);
+
+            // Show success message briefly
+            deactivateError = string.Empty;
+
+            // Navigate to logout or home page after a brief delay
+            await Task.Delay(1000);
+            Navigation.NavigateTo("/logout", true);
+        }
+        catch (Exception ex)
+        {
+            deactivateError = $"Error deactivating account: {ex.Message}";
+            Console.WriteLine($"Error deactivating account: {ex.Message}");
         }
     }
 
@@ -930,9 +1147,16 @@
     private bool CanChangePassword()
     {
         return !string.IsNullOrWhiteSpace(passwordChange.CurrentPassword) &&
+                passwordChange.CurrentPassword == currentPassword &&
+                currentPassword != passwordChange.NewPassword &&
                !string.IsNullOrWhiteSpace(passwordChange.NewPassword) &&
                !string.IsNullOrWhiteSpace(passwordChange.ConfirmPassword) &&
                passwordChange.NewPassword.Length >= 6;
+    }
+
+    private bool CanDeactivateAccount()
+    {
+        return !string.IsNullOrWhiteSpace(deactivatePassword) && deactivateConfirmed;
     }
 
     private void NavigateToOrders()
