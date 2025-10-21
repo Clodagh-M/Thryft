@@ -229,4 +229,20 @@ public class UserService
         var user = await context.Users.FirstOrDefaultAsync(u => u.Email == email);
         return user?.IsActive ?? false;
     }
+
+    public async Task activateAccount(User user)
+    {
+        user.IsActive = true;
+        using var context = _contextFactory.CreateDbContext();
+        context.Users.Update(user);
+        await context.SaveChangesAsync();
+    }
+
+    public async Task deactivateAccount(User user)
+    {
+        user.IsActive = false;
+        using var context = _contextFactory.CreateDbContext();
+        context.Users.Update(user);
+        await context.SaveChangesAsync();
+    }
 }

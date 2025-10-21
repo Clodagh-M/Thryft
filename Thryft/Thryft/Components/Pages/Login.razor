@@ -77,15 +77,25 @@
         try
         {
             var user = await userService.ValidateUserCredentialsAsync(email, password);
-            Console.WriteLine($"User found: {user}");
+
 
             if (user != null)
             {
-                // Force state update before navigation
-                StateHasChanged();
-                await Task.Delay(100); // Small delay to ensure UI updates
+                Console.WriteLine($"User found: {user}");
 
-                navigationManager.NavigateTo("/home", forceLoad: false); // Don't force load
+                //If user is deactivated mark as active
+                if (user.IsActive == false)
+                {
+                    Console.WriteLine("Activating account...");
+                    await userService.activateAccount(user);
+                }
+
+                // Force state update before navigation
+                    StateHasChanged();
+                    await Task.Delay(100); // Small delay to ensure UI updates
+
+                    navigationManager.NavigateTo("/home", forceLoad: false); // Don't force load
+                
             }
             else
             {
