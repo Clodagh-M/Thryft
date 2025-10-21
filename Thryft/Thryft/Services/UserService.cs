@@ -139,9 +139,9 @@ public class UserService
     {
         using var context = _contextFactory.CreateDbContext();
         email = email.ToLower();
-        currentUser = await context.Users
+       var currentUser = await context.Users
             .Include(u => u.Addresses) // Make sure to include addresses
-            .FirstOrDefaultAsync(u => u.Email == email && u.IsActive);
+            .FirstOrDefaultAsync(u => u.Email == email );
         return currentUser;
     }
 
