@@ -193,12 +193,12 @@ public class UserService
             .Include(u => u.Addresses) // Include addresses when getting current user
             .FirstOrDefaultAsync(u => u.Email == email);
     }
-    private string HashPassword(string password)
+    public string HashPassword(string password)
     {
         return BCrypt.Net.BCrypt.HashPassword(password);
     }
 
-    private bool VerifyPassword(string password, string hashedPassword)
+    public bool VerifyPassword(string password, string hashedPassword)
     {
         return BCrypt.Net.BCrypt.Verify(password, hashedPassword);
     }
