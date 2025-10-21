@@ -8,6 +8,25 @@
 @inject AuthService authService
 
 @rendermode InteractiveServer
+<style>
+    /* logo */
+    .logo-image {
+        max-width: 200px;
+        width: 100%;
+        height: auto;
+        object-fit: contain;
+        border-radius:50% !important;
+    }
+
+    .logo-imagecrop {
+        max-width: 120px;
+        width: 100%;
+        height: auto;
+        object-fit: contain;
+        border-radius: 20% !important;
+    }
+
+</style>
 
 <MudPopoverProvider />
 
@@ -34,9 +53,10 @@ else
                 }
                 else
                 {
-                    <MudIconButton Color="Color.Tertiary" Icon="@Icons.Material.Filled.Home" OnClick="NavigateToHome"></MudIconButton>
+                    <MudIconButton Color="Color.Tertiary" Icon="@Icons.Material.Filled.Home" Class="ms-12 me-12" OnClick="NavigateToHome"></MudIconButton>
                     <MudSpacer />
-                    <MudText @onclick="NavigateToHome">thryft</MudText>
+                    <MudImage Src="images/logocrop.png" Alt="companylogo" Elevation="25" Class="rounded-lg  ms-12 logo-imagecrop" />
+                    
                     <MudSpacer />
                     <MudText Class="pe-1"><b>Welcome</b> @GetFirstName(user.Name)</MudText>
 
@@ -56,7 +76,9 @@ else
         </Authorized>
         <NotAuthorized>
             <MudContainer Class="text-center py-16">
-                <MudIcon Icon="@Icons.Material.Filled.Lock" Size="MudBlazor.Size.Large" Color="Color.Primary" Class="mb-4" />
+
+                <MudImage Src="images/logo.png" Alt="companylogo" Elevation="25" Class="rounded-lg ma-4 logo-image" />
+            
                 <MudText Typo="Typo.h4" Class="mb-3">Access Required</MudText>
                 <MudText Typo="Typo.body1" Color="Color.Primary" Class="mb-4">
                     Please log in to browse our products.
