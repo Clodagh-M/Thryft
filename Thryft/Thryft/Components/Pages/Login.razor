@@ -9,7 +9,9 @@
 
 <PageTitle>Login</PageTitle>
 
+
 <MudContainer MaxWidth="MaxWidth.Small" Class="py-16">
+
     <MudCard>
         <MudCardContent>
             <MudText Typo="Typo.h4" Class="text-center mb-4">Login</MudText>
@@ -62,6 +64,7 @@
     private string password;
     private string errorMessage;
     MudTextField<string> pwField;
+    MudOverlay activatingOverlay;
 
     private bool isLoading = false;
 
@@ -76,7 +79,7 @@
 
         try
         {
-            var user = await userService.ValidateUserCredentialsAsync(email, password);
+            var user = await userService.ValidateUserCredentialsAsync(email.ToLower(), password);
 
 
             if (user != null)
@@ -86,6 +89,7 @@
                 //If user is deactivated mark as active
                 if (user.IsActive == false)
                 {
+
                     Console.WriteLine("Activating account...");
                     await userService.activateAccount(user);
                 }
@@ -95,6 +99,7 @@
                     await Task.Delay(100); // Small delay to ensure UI updates
 
                     navigationManager.NavigateTo("/home", forceLoad: false); // Don't force load
+
                 
             }
             else
