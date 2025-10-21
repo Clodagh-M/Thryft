@@ -62,10 +62,10 @@
         margin: 0 auto 1rem;
     }
 
-    .profile-icon i {
-        font-size: 2rem;
-        color: white;
-    }
+        .profile-icon i {
+            font-size: 2rem;
+            color: white;
+        }
 
     .action-button {
         margin-bottom: 1rem;
@@ -75,10 +75,10 @@
         transition: all 0.3s ease;
     }
 
-    .action-button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    }
+        .action-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
 
     .user-details {
         background: #f8f9fa;
@@ -95,9 +95,9 @@
         border-bottom: 1px solid #e9ecef;
     }
 
-    .detail-item:last-child {
-        border-bottom: none;
-    }
+        .detail-item:last-child {
+            border-bottom: none;
+        }
 
     .form-section {
         background: white;
@@ -115,21 +115,71 @@
         transition: all 0.3s ease;
     }
 
-    .address-card:hover {
-        border-color: #eb8691;
-        box-shadow: 0 2px 8px rgba(235, 134, 145, 0.2);
+        .address-card:hover {
+            border-color: #eb8691;
+            box-shadow: 0 2px 8px rgba(235, 134, 145, 0.2);
+        }
+
+        .address-card.active {
+            border-color: #eb8691;
+            background: #fff5f5;
+        }
+
+    .password-section {
+        background: #f8f9fa;
+        padding: 1.5rem;
+        border-radius: 8px;
+        margin-top: 2rem;
     }
 
-    .address-card.active {
-        border-color: #eb8691;
-        background: #fff5f5;
+    .tab-container {
+        margin-bottom: 1.5rem;
+    }
+
+    .tab-button {
+        padding: 0.75rem 1.5rem;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        transition: all 0.3s ease;
+    }
+
+        .tab-button.active {
+            border-bottom-color: #eb8691;
+            color: #eb8691;
+            font-weight: 600;
+        }
+
+        .tab-button:hover:not(.active) {
+            border-bottom-color: #ccc;
+            color: #666;
+        }
+
+    .deactivate-warning {
+        background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%);
+        border: 1px solid #feb2b2;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .deactivate-item {
+        display: flex;
+        align-items: center;
+        padding: 0.5rem 0;
+    }
+
+    .deactivate-icon {
+        margin-right: 0.75rem;
+        flex-shrink: 0;
     }
 
     @@media (max-width: 960px) {
         .profile-content {
             flex-direction: column;
         }
-        
+
         .profile-left {
             border-right: none;
             border-bottom: 1px solid #e2e8f0;
@@ -161,27 +211,36 @@
                         {
                             <div class="user-details">
                                 <MudText Typo="Typo.h6" Class="mb-3" Style="font-weight: 600;">Personal Information</MudText>
-                                
+
                                 <div class="detail-item">
                                     <MudText Typo="Typo.body1"><b>Full Name:</b></MudText>
                                     <MudText Typo="Typo.body1">@user.Name</MudText>
                                 </div>
-                                
+
                                 <div class="detail-item">
                                     <MudText Typo="Typo.body1"><b>Email Address:</b></MudText>
                                     <MudText Typo="Typo.body1">@user.Email</MudText>
                                 </div>
-                                
+
                                 <div class="detail-item">
                                     <MudText Typo="Typo.body1"><b>Member Since:</b></MudText>
                                     <MudText Typo="Typo.body1">@user.CreatedAt.ToString("MMMM yyyy")</MudText>
                                 </div>
-                                
+
                                 <div class="detail-item">
                                     <MudText Typo="Typo.body1"><b>Account Status:</b></MudText>
-                                    <MudChip T="string" Color="Color.Success" Variant="Variant.Filled" Size="MudBlazor.Size.Small">
-                                        Active
-                                    </MudChip>
+                                    @if (user.IsActive)
+                                    {
+                                        <MudChip T="string" Color="Color.Success" Variant="Variant.Filled" Size="MudBlazor.Size.Small">
+                                            Active
+                                        </MudChip>
+                                    }
+                                    else
+                                    {
+                                        <MudChip T="string" Color="Color.Warning" Variant="Variant.Filled" Size="MudBlazor.Size.Small">
+                                            Inactive
+                                        </MudChip>
+                                    }
                                 </div>
                             </div>
 
@@ -196,7 +255,8 @@
                                         @defaultAddress.AddressLine1<br />
                                         @if (!string.IsNullOrEmpty(defaultAddress.AddressLine2))
                                         {
-                                            @defaultAddress.AddressLine2<br />
+                                            @defaultAddress.AddressLine2
+                                            <br />
                                         }
                                         @defaultAddress.City, @defaultAddress.County<br />
                                         @defaultAddress.Eircode
@@ -206,50 +266,129 @@
                         }
                         else if (currentView == ProfileView.ManageAccount)
                         {
-                            <div class="form-section">
-                                <MudText Typo="Typo.h6" Class="mb-4" Style="font-weight: 600;">Manage Account Details</MudText>
-                                
-                                <MudGrid Spacing="3">
-                                    <MudItem xs="12" md="6">
-                                        <MudTextField @bind-Value="editUser.Name"
-                                                     Label="Full Name"
-                                                     Variant="Variant.Outlined"
-                                                     Required="true"
-                                                     RequiredError="Name is required"
-                                                     For="@(() => editUser.Name)" />
-                                    </MudItem>
-                                    <MudItem xs="12" md="6">
-                                        <MudTextField @bind-Value="editUser.Email"
-                                                     Label="Email"
-                                                     Variant="Variant.Outlined"
-                                                     Required="true"
-                                                     RequiredError="Email is required"
-                                                     For="@(() => editUser.Email)" />
-                                    </MudItem>
-                                    <MudItem xs="12">
-                                        <MudTextField @bind-Value="currentPassword"
-                                                     Label="Current Password"
-                                                     Variant="Variant.Outlined"
-                                                     InputType="InputType.Password"
-                                                     Placeholder="Enter current password to save changes" />
-                                    </MudItem>
-                                </MudGrid>
-                                
-                                <div class="d-flex justify-end gap-2 mt-4">
-                                    <MudButton Variant="Variant.Text"
-                                              Color="Color.Default"
-                                              OnClick="() => ShowUserDetails()">
-                                        Cancel
-                                    </MudButton>
-                                    <MudButton Variant="Variant.Filled"
-                                              Color="Color.Primary"
-                                              OnClick="SaveAccountDetails"
-                                              StartIcon="@Icons.Material.Filled.Save"
-                                              Disabled="@(!CanSaveAccountDetails())">
-                                        Save Changes
-                                    </MudButton>
-                                </div>
+                            <div class="tab-container">
+                                <button class="tab-button @(accountTab == AccountTab.ProfileDetails ? "active" : "")"
+                                        @onclick="() => SwitchAccountTab(AccountTab.ProfileDetails)">
+                                    Profile Details
+                                </button>
+                                <button class="tab-button @(accountTab == AccountTab.ChangePassword ? "active" : "")"
+                                        @onclick="() => SwitchAccountTab(AccountTab.ChangePassword)">
+                                    Change Password
+                                </button>
                             </div>
+
+                            @if (accountTab == AccountTab.ProfileDetails)
+                            {
+                                <div class="form-section">
+                                    <MudText Typo="Typo.h6" Class="mb-4" Style="font-weight: 600;">Manage Account Details</MudText>
+
+                                    <MudGrid Spacing="3">
+                                        <MudItem xs="12" md="6">
+                                            <MudTextField @bind-Value="editUser.Name"
+                                                          Label="Full Name"
+                                                          Variant="Variant.Outlined"
+                                                          Required="true"
+                                                          RequiredError="Name is required"
+                                                          For="@(() => editUser.Name)" />
+                                        </MudItem>
+                                        <MudItem xs="12" md="6">
+                                            <MudTextField @bind-Value="editUser.Email"
+                                                          Label="Email"
+                                                          Variant="Variant.Outlined"
+                                                          Required="true"
+                                                          RequiredError="Email is required"
+                                                          For="@(() => editUser.Email)" />
+                                        </MudItem>
+                                        <MudItem xs="12">
+                                            <MudTextField @bind-Value="currentPassword"
+                                                          Label="Current Password"
+                                                          Variant="Variant.Outlined"
+                                                          InputType="InputType.Password"
+                                                          Placeholder="Enter current password to save changes" />
+                                        </MudItem>
+                                    </MudGrid>
+
+                                    <div class="d-flex justify-end gap-2 mt-4">
+                                        <MudButton Variant="Variant.Text"
+                                                   Color="Color.Default"
+                                                   OnClick="() => ShowUserDetails()">
+                                            Cancel
+                                        </MudButton>
+                                        <MudButton Variant="Variant.Filled"
+                                                   Color="Color.Primary"
+                                                   OnClick="SaveAccountDetails"
+                                                   StartIcon="@Icons.Material.Filled.Save"
+                                                   Disabled="!CanSaveAccountDetails()">
+                                            Save Changes
+                                        </MudButton>
+                                    </div>
+                                </div>
+                            }
+                            else if (accountTab == AccountTab.ChangePassword)
+                            {
+                                <div class="form-section">
+                                    <MudText Typo="Typo.h6" Class="mb-4" Style="font-weight: 600;">Change Password</MudText>
+
+                                    <MudGrid Spacing="3">
+                                        <MudItem xs="12">
+                                            <MudTextField @bind-Value="passwordChange.CurrentPassword"
+                                                          Label="Current Password"
+                                                          Variant="Variant.Outlined"
+                                                          InputType="InputType.Password"
+                                                          Required="true"
+                                                          RequiredError="Current password is required"
+                                                          For="@(() => passwordChange.CurrentPassword)" />
+                                        </MudItem>
+                                        <MudItem xs="12">
+                                            <MudTextField @bind-Value="passwordChange.NewPassword"
+                                                          Label="New Password"
+                                                          Variant="Variant.Outlined"
+                                                          InputType="InputType.Password"
+                                                          Required="true"
+                                                          RequiredError="New password is required"
+                                                          For="@(() => passwordChange.NewPassword)" />
+                                        </MudItem>
+                                        <MudItem xs="12">
+                                            <MudTextField @bind-Value="passwordChange.ConfirmPassword"
+                                                          Label="Confirm New Password"
+                                                          Variant="Variant.Outlined"
+                                                          InputType="InputType.Password"
+                                                          Required="true"
+                                                          RequiredError="Please confirm your new password"
+                                                          For="@(() => passwordChange.ConfirmPassword)" />
+                                        </MudItem>
+                                    </MudGrid>
+
+                                    @if (!string.IsNullOrEmpty(passwordError))
+                                    {
+                                        <MudAlert Severity="Severity.Error" Class="mt-3">
+                                            @passwordError
+                                        </MudAlert>
+                                    }
+
+                                    @if (!string.IsNullOrEmpty(passwordSuccess))
+                                    {
+                                        <MudAlert Severity="Severity.Success" Class="mt-3">
+                                            @passwordSuccess
+                                        </MudAlert>
+                                    }
+
+                                    <div class="d-flex justify-end gap-2 mt-4">
+                                        <MudButton Variant="Variant.Text"
+                                                   Color="Color.Default"
+                                                   OnClick="() => ShowUserDetails()">
+                                            Cancel
+                                        </MudButton>
+                                        <MudButton Variant="Variant.Filled"
+                                                   Color="Color.Primary"
+                                                   OnClick="ChangePassword"
+                                                   StartIcon="@Icons.Material.Filled.Lock"
+                                                   Disabled="!CanChangePassword()">
+                                            Change Password
+                                        </MudButton>
+                                    </div>
+                                </div>
+                            }
                         }
                         else if (currentView == ProfileView.ManageAddress)
                         {
@@ -257,9 +396,9 @@
                                 <div class="d-flex justify-content-between align-items-center mb-4">
                                     <MudText Typo="Typo.h6" Style="font-weight: 600;">Manage Addresses</MudText>
                                     <MudButton Variant="Variant.Outlined"
-                                              Color="Color.Primary"
-                                              OnClick="ShowAddAddress"
-                                              StartIcon="@Icons.Material.Filled.Add">
+                                               Color="Color.Primary"
+                                               OnClick="ShowAddAddress"
+                                               StartIcon="@Icons.Material.Filled.Add">
                                         Add New Address
                                     </MudButton>
                                 </div>
@@ -269,33 +408,33 @@
                                     <MudGrid Spacing="3">
                                         <MudItem xs="12">
                                             <MudTextField @bind-Value="newAddress.FullName"
-                                                         Label="Full Name"
-                                                         Variant="Variant.Outlined"
-                                                         Required="true"
-                                                         FullWidth="true" />
+                                                          Label="Full Name"
+                                                          Variant="Variant.Outlined"
+                                                          Required="true"
+                                                          FullWidth="true" />
                                         </MudItem>
 
                                         <MudItem xs="12">
                                             <MudTextField @bind-Value="newAddress.AddressLine1"
-                                                         Label="Address Line 1"
-                                                         Variant="Variant.Outlined"
-                                                         Required="true"
-                                                         FullWidth="true" />
+                                                          Label="Address Line 1"
+                                                          Variant="Variant.Outlined"
+                                                          Required="true"
+                                                          FullWidth="true" />
                                         </MudItem>
 
                                         <MudItem xs="12">
                                             <MudTextField @bind-Value="newAddress.AddressLine2"
-                                                         Label="Address Line 2 (Optional)"
-                                                         Variant="Variant.Outlined"
-                                                         FullWidth="true" />
+                                                          Label="Address Line 2 (Optional)"
+                                                          Variant="Variant.Outlined"
+                                                          FullWidth="true" />
                                         </MudItem>
 
                                         <MudItem xs="12" sm="6">
                                             <MudTextField @bind-Value="newAddress.City"
-                                                         Label="City / Town"
-                                                         Variant="Variant.Outlined"
-                                                         Required="true"
-                                                         FullWidth="true" />
+                                                          Label="City / Town"
+                                                          Variant="Variant.Outlined"
+                                                          Required="true"
+                                                          FullWidth="true" />
                                         </MudItem>
 
                                         <MudItem xs="12" sm="6">
@@ -315,30 +454,30 @@
 
                                         <MudItem xs="12">
                                             <MudTextField @bind-Value="newAddress.Eircode"
-                                                         Label="Eircode"
-                                                         Variant="Variant.Outlined"
-                                                         Required="true"
-                                                         FullWidth="true"
-                                                         HelperText="Format: A65 F4E2" />
+                                                          Label="Eircode"
+                                                          Variant="Variant.Outlined"
+                                                          Required="true"
+                                                          FullWidth="true"
+                                                          HelperText="Format: A65 F4E2" />
                                         </MudItem>
 
                                         <MudItem xs="12">
                                             <MudCheckBox @bind-Value="newAddress.IsDefault"
-                                                        Color="Color.Primary"
-                                                        Label="Set as default shipping address" />
+                                                         Color="Color.Primary"
+                                                         Label="Set as default shipping address" />
                                         </MudItem>
                                     </MudGrid>
-                                    
+
                                     <div class="d-flex justify-end gap-2 mt-4">
                                         <MudButton Variant="Variant.Text"
-                                                  Color="Color.Default"
-                                                  OnClick="CancelEditAddress">
+                                                   Color="Color.Default"
+                                                   OnClick="CancelEditAddress">
                                             Cancel
                                         </MudButton>
                                         <MudButton Variant="Variant.Filled"
-                                                  Color="Color.Primary"
-                                                  OnClick="SaveAddress"
-                                                  StartIcon="@Icons.Material.Filled.Save">
+                                                   Color="Color.Primary"
+                                                   OnClick="SaveAddress"
+                                                   StartIcon="@Icons.Material.Filled.Save">
                                             @(selectedAddressIndex == -1 ? "Add Address" : "Update Address")
                                         </MudButton>
                                     </div>
@@ -363,19 +502,20 @@
                                                     </MudText>
                                                     <div class="d-flex gap-1">
                                                         <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                                                                     Size="MudBlazor.Size.Small"
-                                                                     OnClick="@(() => EditAddress(index))" />
+                                                                       Size="MudBlazor.Size.Small"
+                                                                       OnClick="@(() => EditAddress(index))" />
                                                         <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                                                                     Size="MudBlazor.Size.Small"
-                                                                     Color="Color.Error"
-                                                                     OnClick="@(() => DeleteAddress(index))" />
+                                                                       Size="MudBlazor.Size.Small"
+                                                                       Color="Color.Error"
+                                                                       OnClick="@(() => DeleteAddress(index))" />
                                                     </div>
                                                 </div>
                                                 <MudText Typo="Typo.body2" Color="Color.Info">
                                                     @address.AddressLine1<br />
                                                     @if (!string.IsNullOrEmpty(address.AddressLine2))
                                                     {
-                                                        @address.AddressLine2<br />
+                                                        @address.AddressLine2
+                                                        <br />
                                                     }
                                                     @address.City, @address.County<br />
                                                     @address.Eircode
@@ -395,6 +535,113 @@
                                 }
                             </div>
                         }
+                        else if (currentView == ProfileView.DeactivateAccount)
+                        {
+                            <div class="form-section">
+                                <div class="text-center mb-4">
+                                    <MudIcon Icon="@Icons.Material.Filled.Warning" Size="MudBlazor.Size.Large" Color="Color.Error" Class="mb-3" />
+                                    <MudText Typo="Typo.h5" Color="Color.Error" Style="font-weight: 600;">Deactivate Account</MudText>
+                                    <MudText Typo="Typo.body1" Color="Color.Info" Class="mt-2">
+                                        This action will temporarily disable your account. You can reactivate it by logging in again.
+                                    </MudText>
+                                </div>
+
+                                <div class="user-details">
+                                    <MudText Typo="Typo.h6" Class="mb-3" Style="font-weight: 600;">What happens when you deactivate:</MudText>
+
+                                    <div class="deactivate-item">
+                                        <MudIcon Icon="@Icons.Material.Filled.Block" Size="MudBlazor.Size.Small" Color="Color.Info" Class="deactivate-icon" />
+                                        <MudText Typo="Typo.body2">You will be logged out immediately</MudText>
+                                    </div>
+
+                                    <div class="deactivate-item">
+                                        <MudIcon Icon="@Icons.Material.Filled.ShoppingCart" Size="MudBlazor.Size.Small" Color="Color.Info" Class="deactivate-icon" />
+                                        <MudText Typo="Typo.body2">You won't be able to place new orders</MudText>
+                                    </div>
+
+                                    <div class="deactivate-item">
+                                        <MudIcon Icon="@Icons.Material.Filled.VisibilityOff" Size="MudBlazor.Size.Small" Color="Color.Info" Class="deactivate-icon" />
+                                        <MudText Typo="Typo.body2">Your profile will be hidden</MudText>
+                                    </div>
+
+                                    <div class="deactivate-item">
+                                        <MudIcon Icon="@Icons.Material.Filled.Settings" Size="MudBlazor.Size.Small" Color="Color.Success" Class="deactivate-icon" />
+                                        <MudText Typo="Typo.body2">Your data will be preserved</MudText>
+                                    </div>
+
+                                    <div class="deactivate-item">
+                                        <MudIcon Icon="@Icons.Material.Filled.Restore" Size="MudBlazor.Size.Small" Color="Color.Success" Class="deactivate-icon" />
+                                        <MudText Typo="Typo.body2">You can reactivate anytime by logging in</MudText>
+                                    </div>
+                                </div>
+
+                                @if (!showDeactivateConfirmation)
+                                {
+                                    <MudGrid Spacing="3" Class="mt-4">
+                                        <MudItem xs="12">
+                                            <MudTextField @bind-Value="deactivatePassword"
+                                                          Label="Confirm Your Password"
+                                                          Variant="Variant.Outlined"
+                                                          InputType="InputType.Password"
+                                                          Required="true"
+                                                          FullWidth="true"
+                                                          Placeholder="Enter your password to confirm" />
+                                        </MudItem>
+                                        <MudItem xs="12">
+                                            <MudCheckBox @bind-Value="deactivateConfirmed"
+                                                         Color="Color.Error"
+                                                         Label="I understand that my account will be deactivated" />
+                                        </MudItem>
+                                    </MudGrid>
+
+                                    @if (!string.IsNullOrEmpty(deactivateError))
+                                    {
+                                        <MudAlert Severity="Severity.Error" Class="mt-3">
+                                            @deactivateError
+                                        </MudAlert>
+                                    }
+
+                                    <div class="d-flex justify-end gap-2 mt-4">
+                                        <MudButton Variant="Variant.Text"
+                                                   Color="Color.Default"
+                                                   OnClick="() => ShowUserDetails()">
+                                            Cancel
+                                        </MudButton>
+                                        <MudButton Variant="Variant.Filled"
+                                                   Color="Color.Error"
+                                                   OnClick="ConfirmDeactivate"
+                                                   StartIcon="@Icons.Material.Filled.Warning"
+                                                   Disabled="!CanDeactivateAccount()">
+                                            Deactivate Account
+                                        </MudButton>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="text-center py-4">
+                                        <MudIcon Icon="@Icons.Material.Filled.Info" Size="MudBlazor.Size.Large" Color="Color.Warning" Class="mb-3" />
+                                        <MudText Typo="Typo.h6" Class="mb-3">Are you absolutely sure?</MudText>
+                                        <MudText Typo="Typo.body2" Color="Color.Info" Class="mb-4">
+                                            This action cannot be undone. You will be logged out immediately.
+                                        </MudText>
+
+                                        <div class="d-flex justify-center gap-2 mt-4">
+                                            <MudButton Variant="Variant.Text"
+                                                       Color="Color.Default"
+                                                       OnClick="() => showDeactivateConfirmation = false">
+                                                Go Back
+                                            </MudButton>
+                                            <MudButton Variant="Variant.Filled"
+                                                       Color="Color.Error"
+                                                       OnClick="DeactivateAccount"
+                                                       StartIcon="@Icons.Material.Filled.DeleteForever">
+                                                Yes, Deactivate My Account
+                                            </MudButton>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
                     }
                     else
                     {
@@ -405,9 +652,9 @@
                                 Please log in to view and manage your profile details.
                             </MudText>
                             <MudButton Variant="Variant.Filled"
-                                      Color="Color.Primary"
-                                      OnClick="RedirectToLogin"
-                                      StartIcon="@Icons.Material.Filled.Login">
+                                       Color="Color.Primary"
+                                       OnClick="RedirectToLogin"
+                                       StartIcon="@Icons.Material.Filled.Login">
                                 Log In
                             </MudButton>
                         </div>
@@ -417,44 +664,55 @@
                 <!-- Right Side (30%) -->
                 <div class="profile-right">
                     <MudText Typo="Typo.h6" Class="mb-4" Style="font-weight: 600;">Profile Actions</MudText>
-                    
+
                     <MudButton Variant="Variant.Filled"
-                              Color="Color.Primary"
-                              OnClick="ShowUserDetails"
-                              StartIcon="@Icons.Material.Filled.Person"
-                              Class="action-button"
-                              FullWidth="true"
-                              Disabled="@(currentView == ProfileView.UserDetails)">
+                               Color="Color.Primary"
+                               OnClick="ShowUserDetails"
+                               StartIcon="@Icons.Material.Filled.Person"
+                               Class="action-button"
+                               FullWidth="true"
+                               Disabled="@(currentView == ProfileView.UserDetails)">
                         View Profile
                     </MudButton>
-                    
+
                     <MudButton Variant="Variant.Outlined"
-                              Color="Color.Primary"
-                              OnClick="ShowManageAccount"
-                              StartIcon="@Icons.Material.Filled.Edit"
-                              Class="action-button"
-                              FullWidth="true"
-                              Disabled="@(currentView == ProfileView.ManageAccount)">
+                               Color="Color.Primary"
+                               OnClick="ShowManageAccount"
+                               StartIcon="@Icons.Material.Filled.Edit"
+                               Class="action-button"
+                               FullWidth="true"
+                               Disabled="@(currentView == ProfileView.ManageAccount)">
                         Manage Account
                     </MudButton>
-                    
+
                     <MudButton Variant="Variant.Outlined"
-                              Color="Color.Primary"
-                              OnClick="ShowManageAddress"
-                              StartIcon="@Icons.Material.Filled.Home"
-                              Class="action-button"
-                              FullWidth="true"
-                              Disabled="@(currentView == ProfileView.ManageAddress)">
+                               Color="Color.Primary"
+                               OnClick="ShowManageAddress"
+                               StartIcon="@Icons.Material.Filled.Home"
+                               Class="action-button"
+                               FullWidth="true"
+                               Disabled="@(currentView == ProfileView.ManageAddress)">
                         Manage Addresses
                     </MudButton>
-                    
+
                     <MudButton Variant="Variant.Outlined"
-                              Color="Color.Info"
-                              OnClick="NavigateToOrders"
-                              StartIcon="@Icons.Material.Filled.ShoppingBag"
-                              Class="action-button"
-                              FullWidth="true">
+                               Color="Color.Info"
+                               OnClick="NavigateToOrders"
+                               StartIcon="@Icons.Material.Filled.ShoppingBag"
+                               Class="action-button"
+                               FullWidth="true">
                         View Orders
+                    </MudButton>
+
+                    <!-- Deactivate Account Button -->
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Error"
+                               OnClick="ShowDeactivateAccount"
+                               StartIcon="@Icons.Material.Filled.DeleteOutline"
+                               Class="action-button"
+                               FullWidth="true"
+                               Disabled="@(currentView == ProfileView.DeactivateAccount)">
+                        Deactivate Account
                     </MudButton>
 
                     <MudDivider Class="my-4" />
@@ -469,7 +727,6 @@
 </div>
 
 @code {
-
     private User? user;
     private User editUser = new User();
     private ProfileView currentView = ProfileView.UserDetails;
@@ -477,6 +734,18 @@
     private int selectedAddressIndex = -1;
     private Address newAddress = new Address();
     private string currentPassword = string.Empty;
+    private string passwordError = string.Empty;
+    private string passwordSuccess = string.Empty;
+
+    // Deactivate account properties
+    private bool showDeactivateConfirmation = false;
+    private string deactivatePassword = string.Empty;
+    private bool deactivateConfirmed = false;
+    private string deactivateError = string.Empty;
+
+    // Password change properties
+    private PasswordChangeModel passwordChange = new PasswordChangeModel();
+    private AccountTab accountTab = AccountTab.ProfileDetails;
 
     private readonly string[] irishCounties = new[]
     {
@@ -491,14 +760,28 @@
     {
         UserDetails,
         ManageAccount,
-        ManageAddress
+        ManageAddress,
+        DeactivateAccount
+    }
+
+    private enum AccountTab
+    {
+        ProfileDetails,
+        ChangePassword
+    }
+
+    private class PasswordChangeModel
+    {
+        public string CurrentPassword { get; set; } = string.Empty;
+        public string NewPassword { get; set; } = string.Empty;
+        public string ConfirmPassword { get; set; } = string.Empty;
     }
 
     protected override async Task OnInitializedAsync()
     {
         var state = await authStateProvider.GetAuthenticationStateAsync();
         user = await userService.GetCurrentUserAsync(state.User);
-        
+
         if (user != null)
         {
             editUser = new User
@@ -514,6 +797,9 @@
         currentView = ProfileView.UserDetails;
         editingAddress = false;
         selectedAddressIndex = -1;
+        accountTab = AccountTab.ProfileDetails;
+        ClearPasswordMessages();
+        ResetDeactivateForm();
     }
 
     private void ShowManageAccount()
@@ -521,6 +807,21 @@
         currentView = ProfileView.ManageAccount;
         editingAddress = false;
         selectedAddressIndex = -1;
+        accountTab = AccountTab.ProfileDetails;
+        ClearPasswordMessages();
+        ResetDeactivateForm();
+    }
+
+    private void SwitchAccountTab(AccountTab tab)
+    {
+        accountTab = tab;
+        ClearPasswordMessages();
+    }
+
+    private void ClearPasswordMessages()
+    {
+        passwordError = string.Empty;
+        passwordSuccess = string.Empty;
     }
 
     private void ShowManageAddress()
@@ -528,6 +829,24 @@
         currentView = ProfileView.ManageAddress;
         editingAddress = false;
         selectedAddressIndex = -1;
+        ResetDeactivateForm();
+    }
+
+    private void ShowDeactivateAccount()
+    {
+        currentView = ProfileView.DeactivateAccount;
+        editingAddress = false;
+        selectedAddressIndex = -1;
+        accountTab = AccountTab.ProfileDetails;
+        ClearPasswordMessages();
+    }
+
+    private void ResetDeactivateForm()
+    {
+        showDeactivateConfirmation = false;
+        deactivatePassword = string.Empty;
+        deactivateConfirmed = false;
+        deactivateError = string.Empty;
     }
 
     private void ShowAddAddress()
@@ -585,8 +904,7 @@
             }
             else
             {
-                // Updating existing address - you'll need to implement this in AddressService
-                // For now, let's add the update functionality
+                // Updating existing address
                 await UpdateAddressAsync();
             }
 
@@ -602,7 +920,7 @@
         }
         catch (Exception ex)
         {
-            // Handle error - you might want to show a notification
+            // Handle error
             Console.WriteLine($"Error saving address: {ex.Message}");
         }
     }
@@ -625,7 +943,6 @@
         existingAddress.Eircode = newAddress.Eircode;
         existingAddress.IsDefault = newAddress.IsDefault;
 
-        // You'll need to add an UpdateAddress method to AddressService
         using var context = _contextFactory.CreateDbContext();
         context.Addresses.Update(existingAddress);
         await context.SaveChangesAsync();
@@ -642,7 +959,6 @@
 
         try
         {
-            // You'll need to add a DeleteAddress method to AddressService
             using var context = _contextFactory.CreateDbContext();
             context.Addresses.Remove(addressToDelete);
             await context.SaveChangesAsync();
@@ -669,8 +985,6 @@
             user.Name = editUser.Name;
             user.Email = editUser.Email;
 
-            // You'll need to add an UpdateUserAsync method to UserService
-            // For now, let's implement it directly
             using var context = _contextFactory.CreateDbContext();
             context.Users.Update(user);
             await context.SaveChangesAsync();
@@ -690,11 +1004,159 @@
         }
     }
 
+    private async Task ChangePassword()
+    {
+        if (user == null) return;
+
+        try
+        {
+            ClearPasswordMessages();
+
+            // Validate passwords
+            if (string.IsNullOrWhiteSpace(passwordChange.CurrentPassword))
+            {
+                passwordError = "Please enter your current password";
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(passwordChange.NewPassword))
+            {
+                passwordError = "Please enter a new password";
+                return;
+            }
+
+            if (passwordChange.NewPassword.Length < 6)
+            {
+                passwordError = "New password must be at least 6 characters long";
+                return;
+            }
+
+            if (passwordChange.NewPassword != passwordChange.ConfirmPassword)
+            {
+                passwordError = "New password and confirmation password do not match";
+                return;
+            }
+
+            // Verify current password
+            if (!await VerifyCurrentPassword(passwordChange.CurrentPassword))
+            {
+                passwordError = "Current password is incorrect";
+                return;
+            }
+
+            // Update password
+            await UpdatePassword(passwordChange.NewPassword);
+
+            passwordSuccess = "Password updated successfully!";
+            passwordChange = new PasswordChangeModel();
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            passwordError = $"Error changing password: {ex.Message}";
+            Console.WriteLine($"Error changing password: {ex.Message}");
+        }
+    }
+
+    private async Task<bool> VerifyCurrentPassword(string password)
+    {
+        using var context = _contextFactory.CreateDbContext();
+        var dbUser = await context.Users.FindAsync(user.UserId);
+
+        if (dbUser == null) return false;
+
+        if (userService.VerifyPassword(password, dbUser.Password)) return true;
+
+        return false;
+    }
+
+    private async Task UpdatePassword(string newPassword)
+    {
+        using var context = _contextFactory.CreateDbContext();
+        var dbUser = await context.Users.FindAsync(user.UserId);
+
+        if (dbUser != null)
+        {
+            dbUser.Password = userService.HashPassword(newPassword);
+            dbUser.UpdatedAt = DateTime.UtcNow;
+            await context.SaveChangesAsync();
+        }
+    }
+
+    private async Task ConfirmDeactivate()
+    {
+        if (user == null) return;
+
+        deactivateError = string.Empty;
+
+        // Validate password
+        if (string.IsNullOrWhiteSpace(deactivatePassword))
+        {
+            deactivateError = "Please enter your password to confirm";
+            return;
+        }
+
+        if (!deactivateConfirmed)
+        {
+            deactivateError = "Please confirm that you understand the consequences";
+            return;
+        }
+
+        // Verify password
+        if (!await VerifyCurrentPassword(deactivatePassword))
+        {
+            deactivateError = "Incorrect password. Please try again.";
+            return;
+        }
+
+        showDeactivateConfirmation = true;
+        StateHasChanged();
+    }
+
+    private async Task DeactivateAccount()
+    {
+        if (user == null) return;
+
+        try
+        {
+            // Call the UserService to deactivate the account
+            await userService.deactivateAccount(user);
+
+            // Show success message briefly
+            deactivateError = string.Empty;
+
+            // Navigate to logout or home page after a brief delay
+            await Task.Delay(1000);
+            Navigation.NavigateTo("/logout", true);
+        }
+        catch (Exception ex)
+        {
+            deactivateError = $"Error deactivating account: {ex.Message}";
+            Console.WriteLine($"Error deactivating account: {ex.Message}");
+        }
+    }
+
     private bool CanSaveAccountDetails()
     {
-        return !string.IsNullOrWhiteSpace(editUser.Name) && 
+        return !string.IsNullOrWhiteSpace(editUser.Name) &&
                !string.IsNullOrWhiteSpace(editUser.Email) &&
                !string.IsNullOrWhiteSpace(currentPassword);
+    }
+
+    private bool CanChangePassword()
+    {
+        return !string.IsNullOrWhiteSpace(passwordChange.CurrentPassword) &&
+                passwordChange.CurrentPassword == currentPassword &&
+                currentPassword != passwordChange.NewPassword &&
+               !string.IsNullOrWhiteSpace(passwordChange.NewPassword) &&
+               !string.IsNullOrWhiteSpace(passwordChange.ConfirmPassword) &&
+               passwordChange.NewPassword.Length >= 6;
+    }
+
+    private bool CanDeactivateAccount()
+    {
+        return !string.IsNullOrWhiteSpace(deactivatePassword) && deactivateConfirmed;
     }
 
     private void NavigateToOrders()

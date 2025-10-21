@@ -193,12 +193,12 @@ public class UserService
             .Include(u => u.Addresses) // Include addresses when getting current user
             .FirstOrDefaultAsync(u => u.Email == email);
     }
-    private string HashPassword(string password)
+    public string HashPassword(string password)
     {
         return BCrypt.Net.BCrypt.HashPassword(password);
     }
 
-    private bool VerifyPassword(string password, string hashedPassword)
+    public bool VerifyPassword(string password, string hashedPassword)
     {
         return BCrypt.Net.BCrypt.Verify(password, hashedPassword);
     }
@@ -228,5 +228,21 @@ public class UserService
         email = email.ToLower();
         var user = await context.Users.FirstOrDefaultAsync(u => u.Email == email);
         return user?.IsActive ?? false;
+    }
+
+    public async Task activateAccount(User user)
+    {
+        user.IsActive = true;
+        using var context = _contextFactory.CreateDbContext();
+        context.Users.Update(user);
+        await context.SaveChangesAsync();
+    }
+
+    public async Task deactivateAccount(User user)
+    {
+        user.IsActive = false;
+        using var context = _contextFactory.CreateDbContext();
+        context.Users.Update(user);
+        await context.SaveChangesAsync();
     }
 }
