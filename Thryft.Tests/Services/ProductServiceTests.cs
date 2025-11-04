@@ -151,13 +151,22 @@ public class ProductServiceTests : IDisposable
             Price = 49.99m,
             Stock = 13,
             Category = "Clothing",
+            Colours = Array.Empty<Colour>(),
+            Sizes = Array.Empty<Size>()
         };
 
         // Act
         var result = await productService.AddProductAsync(newProduct);
 
-        // Assert
+        // Assert - Use a fresh context to verify the data was persisted
+        using var verificationContext = CreateFreshContext();
+        var allProducts = await verificationContext.Products.ToListAsync();
+
         Assert.True(result);
+        Assert.Equal(3, allProducts.Count);
+
+        var addedProduct = allProducts.FirstOrDefault(p => p.ProductName == "New Product");
+        Assert.NotNull(addedProduct);
     }
 
     public void Dispose()
