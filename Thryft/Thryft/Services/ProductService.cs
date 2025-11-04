@@ -4,6 +4,8 @@ using Thryft.Models;
 
 namespace Thryft.Services;
 
+//@* add-product branch *@
+
 public class ProductService
 {
     private readonly IDbContextFactory<AppDbContext> _contextFactory;
