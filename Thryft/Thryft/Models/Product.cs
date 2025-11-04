@@ -1,6 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 
+//@* home branch *@
+
 namespace Thryft.Models;
 
 public class Product

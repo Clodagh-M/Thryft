@@ -1,4 +1,6 @@
-﻿public class ActiveFilter
+﻿//@* home branch *@
+
+public class ActiveFilter
 {
     public string Type { get; set; } = string.Empty;
     public string Value { get; set; } = string.Empty;
