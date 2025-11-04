@@ -9,6 +9,7 @@ using BCrypt.Net;
 
 //@* login branch *@
 //@* register branch *@
+//@* profile branch *@
 
 namespace Thryft.Services;
 
