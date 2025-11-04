@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 using Thryft.Models;
 
+//@* database branch *@
+
 namespace Thryft.Data;
 
 public class AppDbContext : DbContext
