@@ -1,5 +1,9 @@
 ﻿namespace Thryft.Models;
 
+//@* login branch *@
+//@* register branch *@
+
+
 public class User
 {
     public int UserId { get; set; }

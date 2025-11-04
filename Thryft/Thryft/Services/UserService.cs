@@ -7,6 +7,9 @@ using Thryft.Data;
 using Thryft.Models;
 using BCrypt.Net;
 
+//@* login branch *@
+//@* register branch *@
+
 namespace Thryft.Services;
 
 public class UserService
