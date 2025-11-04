@@ -36,7 +36,7 @@ builder.Services.AddScoped<AddressService>();
 
 // Database context
 builder.Services.AddDbContextFactory<AppDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlite("Data Source=app.db"));
 
 
 var app = builder.Build();

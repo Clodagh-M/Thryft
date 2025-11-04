@@ -51,4 +51,43 @@ public class ProductService
             return false;
         }
     }
+
+    public async Task<List<Product>> GetProductsByCategoryAsync(string category)
+    {
+        try
+        {
+            using var context = _contextFactory.CreateDbContext();
+            return await context.Products
+                .Where(p => p.Category == category)
+                .ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            // Log error
+            Console.WriteLine($"Error getting products by category {category}: {ex.Message}");
+            return new List<Product>();
+        }
+    }
+
+    public async Task<List<Product>> SearchProductsAsync(string query)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(query))
+                return await GetProductsAsync();
+
+            using var context = _contextFactory.CreateDbContext();
+            return await context.Products
+                .Where(p => p.ProductName.Contains(query) ||
+                           p.Category.Contains(query))
+                .ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            // Log error
+            Console.WriteLine($"Error searching products with query {query}: {ex.Message}");
+            return new List<Product>();
+        }
+    }
+
 }

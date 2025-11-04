@@ -8,9 +8,8 @@ namespace Thryft.Data;
 public class AppDbContext : DbContext
 {
     public AppDbContext(DbContextOptions<AppDbContext> options)
-        :base(options)
+        : base(options)
     {
-
     }
 
     public DbSet<Product> Products { get; set; }
@@ -18,33 +17,25 @@ public class AppDbContext : DbContext
     public DbSet<Order> Orders { get; set; }
     public DbSet<OrderItem> OrderItems { get; set; }
     public DbSet<Address> Addresses { get; set; }
-    //public DbSet<CartItem> CartItems { get; set; }
-
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
-        optionsBuilder.UseSqlite("Data Source=app.db");
-    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // Configure relationships
+        // Your existing model configuration remains the same
         modelBuilder.Entity<Order>(entity =>
         {
             entity.HasKey(e => e.OrderId);
             entity.Property(e => e.Total).HasColumnType("decimal(18,2)");
             entity.Property(e => e.Created)
-                .HasDefaultValueSql("datetime('now')") // Changed from GETDATE()
+                .HasDefaultValueSql("datetime('now')")
                 .ValueGeneratedOnAdd();
             entity.Property(e => e.Status).HasMaxLength(50);
 
-            // Relationship with User
             entity.HasOne(e => e.User)
                   .WithMany()
                   .HasForeignKey(e => e.UserId)
                   .OnDelete(DeleteBehavior.Restrict);
         });
 
-        // For User entity
         modelBuilder.Entity<User>(entity =>
         {
             entity.Property(e => e.CreatedAt)
@@ -67,34 +58,29 @@ public class AppDbContext : DbContext
                 .ValueGeneratedOnAddOrUpdate();
         });
 
-        // Configure OrderItem composite primary key
         modelBuilder.Entity<OrderItem>()
             .HasKey(oi => new { oi.OrderId, oi.ProductId });
 
-        // Configure Order -> OrderItem relationship
         modelBuilder.Entity<OrderItem>()
             .HasOne(oi => oi.Order)
             .WithMany(o => o.OrderItems)
             .HasForeignKey(oi => oi.OrderId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Configure OrderItem -> Product relationship
         modelBuilder.Entity<OrderItem>()
             .HasOne(oi => oi.Product)
-            .WithMany() // Adjust if Product has navigation property back to OrderItems
+            .WithMany()
             .HasForeignKey(oi => oi.ProductId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // Configure Order -> User relationship
         modelBuilder.Entity<Order>()
             .HasOne(o => o.User)
-            .WithMany() // Adjust if User has navigation property back to Orders
+            .WithMany()
             .HasForeignKey(o => o.UserId)
             .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<Product>(entity =>
         {
-            // Configure Colours array - store as comma-separated string
             entity.Property(p => p.Colours)
                 .HasConversion(
                     v => string.Join(",", v),
@@ -104,7 +90,6 @@ public class AppDbContext : DbContext
                 )
                 .HasColumnType("nvarchar(255)");
 
-            // Configure Sizes array - store as comma-separated string
             entity.Property(p => p.Sizes)
                 .HasConversion(
                     v => string.Join(",", v),
@@ -114,7 +99,6 @@ public class AppDbContext : DbContext
                 )
                 .HasColumnType("nvarchar(255)");
 
-            // Configure Price
             entity.Property(p => p.Price)
                 .HasColumnType("decimal(18,2)");
         });
